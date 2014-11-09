@@ -30,4 +30,6 @@ def read_dir(basedir):
         history[name] = df
     return history
 
-
+if __name__ == '__main__':
+    sym = 'SH600000'
+    df = read_history_symble(sym)
