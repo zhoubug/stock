@@ -19,6 +19,12 @@ def read_history_symble(symbol):
     return read_history_file(fullpath)
 
 
+def read_symbol_list():
+    filenames = os.listdir(basedir)
+    symbols = [name.split('.')[0] for name in filenames]
+    return symbols
+
+
 def read_dir(basedir):
     history = {}
     filenames = os.listdir(basedir)
@@ -32,4 +38,5 @@ def read_dir(basedir):
 
 if __name__ == '__main__':
     sym = 'SH600000'
-    df = read_history_symble(sym)
+    l = read_symbol_list()
+    print(l)
