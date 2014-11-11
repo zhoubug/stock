@@ -3,19 +3,23 @@ import data
 
 
 class Market:
-    cache = {}
-
+    _cache = {}
+    _symbols = []
+    
     @staticmethod
-    def get_stocks(symbols, start_date, end_date):
+    def get_stocks(symbols, start_date=None, end_date=None):
         stocks = {}
         for symbol in symbols:
-            df = Market._get_stock(symbol)
-            start_i = df.index.searchsorted(start_date)
-            end_i = df.index.searchsorted(end_date)-1
-
-            stocks[symbol] = df.ix[start_i:end_i]
+            stocks[symbol] = Market.get_stock(symbol, start_date, end_date)
         return stocks
 
+    @staticmethod
+    def get_stock(symbol, start_date=None, end_date=None):
+        df = Market._get_stock(symbol)
+        start_i, end_i = Market._get_trade_index(df, start_date, end_date)
+        s = df.ix[start_i:end_i]
+        return s
+    
     @staticmethod
     def get_stock_price(symbol, date):
         df = Market._get_stock(symbol)
@@ -26,17 +30,40 @@ class Market:
     @staticmethod
     def get_trade_days(start_date, end_date):
         df = Market._get_stock('SH999999')
-        start_i = df.index.searchsorted(start_date)
-        end_i = df.index.searchsorted(end_date)
+        start_i, end_i = Market._get_trade_index(df,
+                                                 start_date, end_date)
         return df.index[start_i:end_i]
+    
+    @staticmethod
+    def get_symbol_list(market=None):
+        if not Market._symbols:
+            Market._symbols = data.read_symbol_list()
+        if market:
+            return filter(lambda s: s.startwith(market), Market._symbols)
+        else:
+            return Market._symbols
 
     @staticmethod
+    def _get_trade_index(df, start_date, end_date):
+        if start_date:
+            start_i = df.index.searchsorted(start_date)
+        else:
+            start_i = 0
+            
+        if end_date:
+            end_i = df.index.searchsorted(end_date)
+            if end_i < len(df.index) and df.index[end_i] == end_date:
+                end_i += 1        
+        else:
+            end_i = len(df.index) 
+        return start_i, end_i
+    
+    @staticmethod
     def _get_stock(symbol):
-        if symbol not in Market.cache:
+        if symbol not in Market._cache:
             df = data.read_history_symble(symbol)
-            Market.cache[symbol] = df
-
-        return Market.cache[symbol]
+            Market._cache[symbol] = df
+        return Market._cache[symbol]
 
     
 class Trader():
@@ -90,3 +117,9 @@ class Order():
                                      self.share, self.price)
     
         
+if __name__ == '__main__':
+    import datetime
+    start = datetime.datetime(2014, 10, 8)
+    end = datetime.datetime(2014, 10, 30)
+    days = Market.get_trade_days(start, end)
+    print(Market.get_symbol_list())
