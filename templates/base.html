@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="shortcut icon" type="image/ico" href="{{ url_for('static', filename='img/favicon.ico') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    
+    {% block html_head %}{% endblock %}
+
+  </head>
+
+  <body>
+    <div id="outer-wrapper">
+	<div class="navbar">
+	    <div class="navbar-inner">
+		<a class="brand" href="#">Title</a>
+		<ul class="nav">
+		    <li><a href="{{ url_for('stocks') }}">Stocks</a></li>
+		</ul>
+	    </div>	    
+
+	</div><!--/#topbar-wrapper-->
+
+
+      {% include "includes/flash_message.html" %}
+
+      <div id="sidebar-and-content-wrapper" class="container">
+
+	{% block sidebar_and_content %}
+
+	  <div id="sidebar-wrapper">
+	    {% block sidebar %}
+	    {% endblock %}
+	  </div><!--/#sidebar-wrapper-->
+
+	  <div id="content-wrapper">
+	    <a id="top"></a>
+	    {% block content %}FIXME: content block{% endblock %}
+	    <div class="section-footer">
+	      <p class="hide">
+		<a href="#top">"Back to top"</a>
+	      </p>
+	    </div>
+	  </div><!--/#content-wrapper-->
+
+	{% endblock %}{# sidebar_and_content #}
+
+      </div><!--/#sidebar-and-content-wrapper-->
+
+    </div><!--/#outer-wrapper-->
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+
+  </body>
+
+</html>

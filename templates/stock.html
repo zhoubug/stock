@@ -1,0 +1,9 @@
+{% extends "home.html" %}
+
+{% block content %}
+    <h1>{{sym}}</h1>
+    {% for c in prices.close %}
+	<p>{{c}}</p>
+    {% endfor %}
+
+{% endblock content %}

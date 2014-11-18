@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import indicators as ind
 import numpy as np
 import pandas as pd
+from sklearn import linear_model
 
-
-class BaseStrategy:
+class BaseStrategy(object):
     def __init__(self):
         self.orders = []
 
@@ -41,12 +41,12 @@ class BaseAnalyst(object):
     def run(self):
         data = Market.get_stocks(self.symbols, self.start_date, self.end_date)
         self.strategy.initial(data)
-        for sym in symbols:
+        for sym in self.symbols:
             self.strategy.initial_stock(sym, data)
 
-        for sym in symbols:
+        for sym in self.symbols:
             d = data[sym]
-            for i in range(1, len(d.index)):
+            for i in range(0, len(d.index)):
                 self.strategy.handle(sym, i, data)
 
         self.strategy.orders.sort(key=lambda o: o.timestamp)
@@ -61,10 +61,10 @@ class BaseAnalyst(object):
         return self.strategy.orders
     
     def get_benchmark(self, sym, start_date, end_date):
-        b_values = Market.get_stocks([sym],
-                                     start_date,
-                                     end_date)
-        benchmark = b_values[sym]['close']
+        b_values = Market.get_stock(sym,
+                                    start_date,
+                                    end_date)
+        benchmark = b_values['close']
         return benchmark
 
     
@@ -89,7 +89,7 @@ class EventProfiler(BaseAnalyst):
             
             if index < self.backward or (len(df.index)-index-1) < self.forward:
                 continue
-            print(order)
+
             window = df.ix[index-self.backward:index+self.forward+1]
             close = window['close']
             norm_close = close / close.ix[self.backward] - 1
@@ -101,6 +101,15 @@ class EventProfiler(BaseAnalyst):
         plt.plot(range(-self.backward, self.forward+1), m)
         plt.axhline(0, color='black')
         plt.axvline(0, color='black')        
+        plt.show()
+
+        #return histgram for n-day after
+        nforward = 2
+        returns = []
+        for window in windows:
+            returns.append(window[self.forward+nforward])
+            
+        plt.hist(returns, 50)
         plt.show()
         
 class BackTester(BaseAnalyst):
@@ -176,35 +185,56 @@ class BackTester(BaseAnalyst):
         plt.show()
         
 
+def capm(symbol, index, start_date, end_date, visual=False):
+    s = Market.get_stock(symbol, start_date, end_date)
+    i = Market.get_stock(index, start_date, end_date)
+    y = s['close']
+    y = ind.returnize(y)
+    x = i.ix[s.index]['close']
+    x = ind.returnize(x)
+    X = [[a] for a in x.values]
 
-import datetime
+    regr = linear_model.LinearRegression(fit_intercept=True)
 
-class TestStrategy(BaseStrategy):
-    def handle(self, symbol, index, data):
-        df = data[symbol]
-        timestamps = df.index
-        close_today = df.ix[timestamps[index]].close
-        close_yest = df.ix[timestamps[index-1]].close
-        if close_today / close_yest > 1.03:
-            self.add_order(symbol, timestamps[index], 500, close_today)
-            # if index+5 < len(timestamps):
-            #     sell_timestamp = timestamps[index+5]
-            # else:
-            #     sell_timestamp = timestamps[-1]
-            # self.add_order(symbol, sell_timestamp, -500,
-            #                df.ix[sell_timestamp].close)
+    regr.fit(X[1:], y[1:])
+    beta = regr.coef_[0]
+    alpha = regr.intercept_
 
+    if visual:
+        plt.scatter(x.values, y.values)
+        plt.plot(X, regr.predict(X), 'r')
+        plt.show()
+    return beta, alpha
             
 if __name__ == '__main__':
-    symbols = Market.get_symbol_list()
-    symbols = [s for s in symbols if s[2] == '6'][0:10]
+    start_date = datetime.datetime(2014, 5, 1)
+    end_date = datetime.datetime(2014, 11, 13)
+    
+    # symbols = Market.get_symbol_list()
+    # symbols = [s for s in symbols if s[2] == '6'][0:10]
 
-    strategy = TestStrategy()
-    start_date = datetime.datetime(2014, 1, 1)
-    end_date = datetime.datetime(2014, 11, 1)
+    # strategy = TestStrategy()
 
-    # tester = BackTester(10000, symbols, strategy, start_date, end_date)
-    tester = EventProfiler(symbols, strategy, start_date, end_date)
-    tester.run()
-    orders = tester.get_orders()
-    tester.analyse()
+    # # tester = BackTester(10000, symbols, strategy, start_date, end_date)
+    # tester = EventProfiler(symbols, strategy, start_date, end_date)
+    # tester.run()
+    # orders = tester.get_orders()
+    # tester.analyse()
+    symbols = Market.get_symbol_list('SH')
+    index = 'SH999999'
+    if index in symbols:
+        symbols.remove(index)
+
+    symbols = ['SH600881', 'SH600064', 'SH600739', 'SH600219', 'SH600362', 'SH600028', 'SH601088', 'SH601989', 'SH600750', 'SH600298', 'SH601607']
+    results = []
+    i = 0
+    size = len(symbols)
+    for symbol in symbols:
+        i += 1
+        print('{}:{}/{}'.format(symbol, i, size))
+        beta, alpha = capm(symbol, 'SH999999', start_date, end_date)
+        print(beta, alpha)
+        results.append((symbol, beta, alpha))
+
+    # results.sort(key=lambda s: s[2], reverse=True)
+    # print(results[0:20])

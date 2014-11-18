@@ -39,7 +39,7 @@ class Market:
         if not Market._symbols:
             Market._symbols = data.read_symbol_list()
         if market:
-            return filter(lambda s: s.startwith(market), Market._symbols)
+            return filter(lambda s: s.startswith(market), Market._symbols)
         else:
             return Market._symbols
 

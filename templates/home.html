@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <ul>
+    {% for sym in symbols %}
+	<li><a href="{{ url_for('stock', sym=sym) }}">{{sym}}</a></li>
+    {% endfor %}
+    </ul>
+{% endblock content %}
