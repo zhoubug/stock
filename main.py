@@ -17,6 +17,12 @@ def stock(sym):
     prices = Market.get_stock(sym)
     return render_template('stock.html', sym=sym, prices=prices)
 
+@app.route('/_stock/<sym>')
+def _stock(sym):
+    prices = Market.get_stock(sym)
+    return prices.to_json(orient="split")
+
+
 @app.route('/stocks')
 def stocks():
     return 'stocks'

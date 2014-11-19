@@ -6,7 +6,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/highstock.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/exporting.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/themes/theme.js') }}"></script>
     {% block html_head %}{% endblock %}
 
   </head>
@@ -15,7 +18,7 @@
     <div id="outer-wrapper">
 	<div class="navbar">
 	    <div class="navbar-inner">
-		<a class="brand" href="#">Title</a>
+		<a class="brand" href="{{ url_for('home') }}">Home</a>
 		<ul class="nav">
 		    <li><a href="{{ url_for('stocks') }}">Stocks</a></li>
 		</ul>
@@ -50,7 +53,6 @@
       </div><!--/#sidebar-and-content-wrapper-->
 
     </div><!--/#outer-wrapper-->
-    <script type="text/javascript" src="/static/js/functions.js"></script>
 
   </body>
 

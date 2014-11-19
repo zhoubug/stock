@@ -1,9 +1,10 @@
 {% extends "home.html" %}
 
-{% block content %}
-    <h1>{{sym}}</h1>
-    {% for c in prices.close %}
-	<p>{{c}}</p>
-    {% endfor %}
 
+{% block content %}
+    <script>
+     $(document).ready(updateChart("{{ sym }}"));
+    </script>    
+    <h1>{{sym}}</h1>
+    <div id="chart"></div>
 {% endblock content %}
