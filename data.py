@@ -2,14 +2,19 @@ import pandas as pd
 import os
 import time
 
-basedir = '/home/leo/tmp'
+basedir = 'static/data'
 
 
 def read_history_file(filename):
-    names = ['date', 'open', 'high', 'low', 'close', 'volume', 'turnover']
-    df = pd.read_csv(filename, delimiter=',', names=names,
-                     skiprows=2, skip_footer=1, index_col='date',
-                     parse_dates=True, )
+    with open(filename, 'r') as f:
+        line = f.readline()
+        tokens = line.split(' ')
+        name = tokens[1]
+        # print(name.decode(encoding='iso-8859-1'))
+        names = ['date', 'open', 'high', 'low', 'close', 'volume', 'turnover']
+        df = pd.read_csv(f, delimiter=',', names=names,
+                         skiprows=1, skip_footer=1, index_col='date',
+                         parse_dates=True, )
     return df
 
 

@@ -1,0 +1,31 @@
+{% macro render_field(field, groupid=None) %}
+  {% if field.errors %}
+    {% if groupid %}
+      <div class="control-group error" id="{{ groupid }}">
+    {% else %}
+	<div class="control-group error">
+    {% endif %}
+  {% else %}
+    {% if  groupid %}
+      <div class="control-group" id="{{ groupid }}">
+    {% else %}
+	<div class="control-group">
+    {% endif %}
+  {% endif %}
+
+  {% if field.type != "HiddenField" %}
+    <div class="control-label">{{ field.label }}</div>
+  {% endif %}
+
+  <div class="controls">
+    {{ field(**kwargs)|safe }}
+    {% if field.errors %}
+      <span class="help-inline">
+	{% for error in field.errors %}
+	  {{ error }}
+	{% endfor %}
+      </span>
+    {% endif %}
+  </div>
+	</div>
+{% endmacro %}

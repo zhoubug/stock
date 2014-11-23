@@ -1,6 +1,7 @@
+var HOST = document.location.origin;
+
 function updateChart(sym){
-    var host = document.location.origin;
-    $.getJSON(host+"/_stock/"+sym, function(data){
+    $.getJSON(HOST+"/_stock/"+sym, function(data){
 	var ohlc = [],
             volumes = [],
             dataLength = data.data.length,
@@ -51,7 +52,7 @@ function updateChart(sym){
             },
 
             title: {
-                text: 'AAPL Historical'
+                text: sym
             },
 
             yAxis: [{
@@ -80,7 +81,7 @@ function updateChart(sym){
 
             series: [{
                 type: 'candlestick',
-                name: 'AAPL',
+                name: sym,
                 data: ohlc,
                 dataGrouping: {
                     units: groupingUnits
@@ -97,4 +98,62 @@ function updateChart(sym){
             }]
 	});
     });
+}
+
+function compare(data){
+    var seriesOptions = [],
+        // create the chart when all data is loaded
+        createChart = function () {
+            $('#chart').highcharts('StockChart', {
+
+                rangeSelector: {
+                    selected: 4
+                },
+
+                yAxis: {
+                    labels: {
+                        formatter: function () {
+                            return (this.value > 0 ? ' + ' : '') + this.value + '%';
+                        }
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 2,
+                        color: 'silver'
+                    }]
+                },
+
+                plotOptions: {
+                    series: {
+                        compare: 'percent'
+                    }
+                },
+
+                tooltip: {
+                    pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+                    valueDecimals: 2
+                },
+
+                series: seriesOptions
+            });
+        };
+
+    var i = 0;
+
+    for(var key in data){
+	var rawdata = JSON.parse(data[key]);
+	var closes = [];
+	var index = rawdata.index,
+	    close = rawdata.data;
+	for(var j=0; j<rawdata.index.length; j++){
+	    closes.push([index[j], close[j]]);
+	}
+
+	seriesOptions[i] = {
+            name: key,
+            data: closes
+	};
+	i++;
+    }
+    createChart();
 }

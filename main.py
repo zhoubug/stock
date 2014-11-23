@@ -2,10 +2,14 @@
 from model import Market
 from analyse import BackTester, BaseStrategy, EventProfiler
 import datetime
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify, json
+from forms import AnalyseForm
+from strategy import strategies
+import pandas as pd
 
 name = "StockTA"
 app = Flask(name)
+app.config.from_object("settings")
 
 @app.route('/')
 def home():
@@ -22,6 +26,35 @@ def _stock(sym):
     prices = Market.get_stock(sym)
     return prices.to_json(orient="split")
 
+@app.route('/analyse', methods=["GET", "POST"])
+def analyse():
+    form = AnalyseForm(request.form)
+    series = None
+    if request.method == "POST":
+        symbols = form.symbols.data
+        start = form.start.data
+        end = form.end.data
+        strategy = form.strategy.data
+
+        tester = BackTester(100000, symbols, strategies[strategy](),
+                            start, end)
+        tester.run()
+        trade_days, values, bench = tester.analyse(benchmark_sym="SH999999")
+        
+        series = {}
+        series["result"] = values.to_json(orient="split")
+        series["benchmark"] = bench.to_json(orient="split")
+    return render_template("analyse.html", form=form, data=series)
+    
+@app.route('/compare')
+def compare():
+    syms = request.args.get('symbols').split(';')
+    series = {}
+    for sym in syms:
+        price = Market.get_stock(sym)
+        close = price.close
+        series[sym] = close.to_json(orient="split")
+    return render_template('compare.html', data=series)
 
 @app.route('/stocks')
 def stocks():
@@ -30,32 +63,6 @@ def stocks():
 if __name__ == '__main__':
     app.run(port=8000, debug=True)
     
-class TestStrategy(BaseStrategy):
-    def handle(self, symbol, index, data):
-        df = data[symbol]
-        timestamps = df.index
-
-        if index < 2:
-            return
-        day_0 = df.ix[timestamps[index]]
-        day_1 = df.ix[timestamps[index-1]]
-        day_2 = df.ix[timestamps[index-2]]
-        
-        
-        #孤岛
-        day_1_high = day_1.close if day_1.close > day_1.open else day_1.open
-        
-        if day_2.open > day_2.close and day_2.close > day_1_high and \
-           day_0.open < day_0.close and day_0.open > day_1_high:
-            self.add_order(symbol, timestamps[index], 200, day_0.close)            
-        # if close_today / close_yest > 1.03:
-        #     self.add_order(symbol, timestamps[index], 200, close_today)
-            # if index+5 < len(timestamps):
-            #     sell_timestamp = timestamps[index+5]
-            # else:
-            #     sell_timestamp = timestamps[-1]
-            # self.add_order(symbol, sell_timestamp, 200,
-            #                df.ix[sell_timestamp].close)
 
 # symbols = ['SH600881', 'SH600064', 'SH600739', 'SH600219', 'SH600362', 'SH600028', 'SH601088', 'SH601989', 'SH600750', 'SH600298', 'SH601607']            
 # strategy = TestStrategy()

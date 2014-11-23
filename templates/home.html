@@ -3,7 +3,10 @@
 {% block content %}
     <ul>
     {% for sym in symbols %}
-	<li><a href="{{ url_for('stock', sym=sym) }}">{{sym}}</a></li>
+	<li>
+	    <a href="{{ url_for('stock', sym=sym) }}">{{sym}}</a>
+	    <a href="{{ url_for('compare', symbols=sym + ";SH999999") }}">compare</a>
+	</li>
     {% endfor %}
     </ul>
 {% endblock content %}

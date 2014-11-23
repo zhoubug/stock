@@ -1,6 +1,6 @@
 from collections import defaultdict
 import data
-
+import indicators as ind
 
 class Market:
     _cache = {}
@@ -116,6 +116,17 @@ class Order():
         return '{}: {} {} {}'.format(self.timestamp, self.symbol,
                                      self.share, self.price)
     
+
+class Property():
+    k = 252
+    
+    def __init__(self, series):
+        returns = ind.returnize(series)
+        self.cum_return = (returns+1).cumprod()
+        self.avg_return = returns.mean()
+        self.std_return = returns.std()
+        self.sharpe_ratio = ind.sharpe_ratio(returns, Property.k)
+
         
 if __name__ == '__main__':
     import datetime

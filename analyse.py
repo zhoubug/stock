@@ -137,7 +137,8 @@ class BackTester(BaseAnalyst):
                                            self.start_date,
                                            self.end_date)
 
-        self.report(trade_days, pd.Series(values), benchmark)
+        return trade_days, pd.Series(values, index=trade_days), benchmark
+        # self.report(trade_days, pd.Series(values), benchmark)
 
     def report(self, timestamps, values, benchmark=None):
         k = 252

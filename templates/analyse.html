@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block content %}
+    <div>
+    <form method="post" action="{{ url_for('analyse') }}">
+	<fieldset>
+	    {{ form.hidden_tag() }}
+	    {{ render_field(form.symbols) }}
+	    {{ render_field(form.start) }}
+	    {{ render_field(form.end) }}
+	    {{ render_field(form.strategy) }}
+	</fieldset>
+	<input type="submit" value="analyse"/>
+    </form>
+    </div>
+    
+    <div id="chart"></div>
+    {% if data %}
+	<div>
+	</div>
+	<script>
+	    var d = {{ data|tojson|safe }};
+	    compare(d);
+	</script>
+    {% endif %}
+{% endblock content %}

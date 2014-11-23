@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div id="chart"></div>
+    <script>
+     var d = {{ data|tojson|safe }};
+     compare(d);
+    </script>    
+{% endblock content %}
