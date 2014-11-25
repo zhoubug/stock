@@ -29,22 +29,32 @@ def _stock(sym):
 @app.route('/analyse', methods=["GET", "POST"])
 def analyse():
     form = AnalyseForm(request.form)
-    series = None
     if request.method == "POST":
-        symbols = form.symbols.data
+        prefix = form.symbols.data
+        symbols = filter(lambda s: s.startswith(prefix), Market.get_symbol_list())
+
         start = form.start.data
         end = form.end.data
         strategy = form.strategy.data
-
-        tester = BackTester(100000, symbols, strategies[strategy](),
+        parameters = form.parameters.data
+        kwargs = [ps.split('=') for ps in parameters.split(';')]
+        kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
+        tester = BackTester(100000, symbols, strategies[strategy](**kwargs),
                             start, end)
         tester.run()
         trade_days, values, bench = tester.analyse(benchmark_sym="SH999999")
-        
+        p_portfolio, p_benchmark = tester.report(trade_days, values, benchmark=bench)
         series = {}
+        properties = {}
         series["result"] = values.to_json(orient="split")
         series["benchmark"] = bench.to_json(orient="split")
-    return render_template("analyse.html", form=form, data=series)
+        properties["result"] = p_portfolio
+        properties["benchmark"] = p_benchmark
+        return render_template("analyse.html", form=form,
+                               orders=tester.get_orders(),
+                               returns=series, properties=properties)
+    else:
+        return render_template("analyse.html", form=form)
     
 @app.route('/compare')
 def compare():

@@ -3,25 +3,64 @@
 
 {% block content %}
     <div>
-    <form method="post" action="{{ url_for('analyse') }}">
-	<fieldset>
-	    {{ form.hidden_tag() }}
-	    {{ render_field(form.symbols) }}
-	    {{ render_field(form.start) }}
-	    {{ render_field(form.end) }}
-	    {{ render_field(form.strategy) }}
-	</fieldset>
-	<input type="submit" value="analyse"/>
-    </form>
+	<form method="post" action="{{ url_for('analyse') }}">
+	    <fieldset>
+		{{ form.hidden_tag() }}
+		{{ render_field(form.symbols) }}
+		{{ render_field(form.start) }}
+		{{ render_field(form.end) }}
+		{{ render_field(form.strategy) }}
+		{{ render_field(form.parameters) }}
+		{{ render_field(form.type) }}
+	    </fieldset>
+	    <input type="submit" value="analyse"/>
+	</form>
     </div>
     
     <div id="chart"></div>
-    {% if data %}
-	<div>
-	</div>
+    {% if properties %}
+	<table class="table">
+	    <tr>
+		<th>name</th>
+		<th>avg return</th>
+		<th>std</th>
+		<th>sharpe ratio</th>
+	    </tr>
+	{% for k in properties %}
+	    <tr>
+		<th>{{ k }}</th>
+		<th>{{ properties[k].avg_return }}</th>
+		<th>{{ properties[k].std_return }}</th>
+		<th>{{ properties[k].sharpe_ratio }}</th>
+	    </tr>
+	{% endfor %}
+	</table>
+    {% endif %}
+    
+    {% if orders %}
+	<table class="table">
+	    <tr>
+		<th>symbol</th>
+		<th>timestamp</th>
+		<th>share</th>
+		<th>price</th>
+	    </tr>
+	{% for order in orders %}
+	    <tr>
+		<th>{{ order.symbol }}</th>
+		<th>{{ order.timestamp }}</th>
+		<th>{{ order.share }}</th>
+		<th>{{ order.price }}</th>
+	    </tr>
+	{% endfor %}
+	</table>
+
+    {% endif %}
+	    
+    {% if returns %}
 	<script>
-	    var d = {{ data|tojson|safe }};
-	    compare(d);
+	 var d = {{ returns|tojson|safe }};
+	 compare(d);
 	</script>
     {% endif %}
 {% endblock content %}

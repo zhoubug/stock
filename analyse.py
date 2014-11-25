@@ -6,9 +6,10 @@ import pandas as pd
 from sklearn import linear_model
 
 class BaseStrategy(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.orders = []
-
+        self.parameters = kwargs
+        
     def add_order(self, sym, timestamp, share, price):
         order = Order(sym, timestamp, share, price)
         self.orders.append(order)
@@ -141,49 +142,43 @@ class BackTester(BaseAnalyst):
         # self.report(trade_days, pd.Series(values), benchmark)
 
     def report(self, timestamps, values, benchmark=None):
-        k = 252
-        returns = ind.returnize(values)
-        cum_return = (returns+1).cumprod()
-        avg_return = returns.mean()
-        std_return = returns.std()
-        sharpe_ratio = ind.sharpe_ratio(returns, k)
-
         if benchmark is not None:
             use_benchmark = True
         else:
             use_benchmark = False
             
+        p_portfolio = Property(values)
         if use_benchmark:
-            b_returns = ind.returnize(benchmark)
-            b_cum_return = (b_returns+1).cumprod()
-            b_avg_return = b_returns.mean()
-            b_std_return = b_returns.std()
-            b_sharpe_ratio = ind.sharpe_ratio(b_returns, k)
+            p_benchmark = Property(benchmark)
 
         # print("The final value of the portfolio is {}".format(values[-1])) 
         print("detail of the performance of the portfolio")
         print("{} to {}".format(timestamps[0], timestamps[-1]))
 
-        print("Sharpe Ratio of Fund: {}".format(sharpe_ratio))
+        print("Sharpe Ratio of Fund: {}".format(p_portfolio.sharpe_ratio))
         if use_benchmark:
-            print("Sharpe Ratio of benchmark: {}".format(b_sharpe_ratio))
+            print("Sharpe Ratio of benchmark: {}".format(p_benchmark.sharpe_ratio))
 
         # print("Total Return of Fund: {}".format(cum_return[-1]))
         # if benchmark:
         #     print("Total Return of benchmark: {}".format(b_cum_return[-1]))
-        print("Standard Deviation of Fund: {}".format(std_return))
+        print("Standard Deviation of Fund: {}".format(p_portfolio.std_return))
         if use_benchmark:
-            print("Standard Deviation of benchmark: {}".format(b_std_return))
+            print("Standard Deviation of benchmark: {}".format(p_benchmark.std_return))
             
-        print("Average Daily Return of Fund: {}".format(avg_return))
+        print("Average Daily Return of Fund: {}".format(p_portfolio.avg_return))
         if use_benchmark:
-            print("Average Daily Return of benchmar: {}".format(b_avg_return))
+            print("Average Daily Return of benchmar: {}".format(p_benchmark.avg_return))
 
-        plt.plot(timestamps, cum_return)
         if use_benchmark:
-            plt.plot(timestamps, b_cum_return)
-            plt.legend(['Sim', 'Benchmark'])
-        plt.show()
+            return p_portfolio, p_benchmark
+        else:
+            return p_portfolio
+        # plt.plot(timestamps, cum_return)
+        # if use_benchmark:
+        #     plt.plot(timestamps, b_cum_return)
+        #     plt.legend(['Sim', 'Benchmark'])
+        # plt.show()
         
 
 def capm(symbol, index, start_date, end_date, visual=False):
