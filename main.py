@@ -39,20 +39,34 @@ def analyse():
         parameters = form.parameters.data
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
-        tester = BackTester(100000, symbols, strategies[strategy](**kwargs),
+        tester = BackTester(100000, symbols,
+                            strategies[strategy](**kwargs),
                             start, end)
+        profile = EventProfiler(symbols,
+                                strategies[strategy](**kwargs),
+                                start, end)
         tester.run()
+        profile.run()
         trade_days, values, bench = tester.analyse(benchmark_sym="SH999999")
-        p_portfolio, p_benchmark = tester.report(trade_days, values, benchmark=bench)
+        p_portfolio, p_benchmark = tester.report(trade_days, values,
+                                                 benchmark=bench)
+
+        window_buy, window_sell = profile.analyse()
         series = {}
         properties = {}
+        windows = {}
         series["result"] = values.to_json(orient="split")
         series["benchmark"] = bench.to_json(orient="split")
         properties["result"] = p_portfolio
         properties["benchmark"] = p_benchmark
+        if window_buy is not None:
+            windows["buy"] = window_buy.tolist()
+        if window_sell is not None:
+            windows["sell"] = window_sell.tolist()
         return render_template("analyse.html", form=form,
                                orders=tester.get_orders(),
-                               returns=series, properties=properties)
+                               returns=series, properties=properties,
+                               windows=windows)
     else:
         return render_template("analyse.html", form=form)
     

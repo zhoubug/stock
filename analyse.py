@@ -81,37 +81,50 @@ class EventProfiler(BaseAnalyst):
 
     def analyse(self, benchmark=None):
         orders = self.strategy.orders
-        windows = []
-        for order in orders:
-            timestamp = order.timestamp
-            sym = order.symbol
-            df = Market.get_stock(sym)
-            index = df.index.searchsorted(timestamp)
-            
-            if index < self.backward or (len(df.index)-index-1) < self.forward:
-                continue
+        orders_buy = [o for o in orders if o.share > 0]
+        orders_sell = [o for o in orders if o.share < 0]
 
-            window = df.ix[index-self.backward:index+self.forward+1]
-            close = window['close']
-            norm_close = close / close.ix[self.backward] - 1
-            windows.append(norm_close.values)
-        if not windows:
-            print('no event')
-            return
-        m = np.mean(windows, 0)
-        plt.plot(range(-self.backward, self.forward+1), m)
-        plt.axhline(0, color='black')
-        plt.axvline(0, color='black')        
-        plt.show()
+        def event_window(orders):
+            windows = []
+            for order in orders:
+                timestamp = order.timestamp
+                sym = order.symbol
+                df = Market.get_stock(sym)
+                index = df.index.searchsorted(timestamp)
+
+                if index < self.backward or (len(df.index)-index-1) < self.forward:
+                    continue
+
+                window = df.ix[index-self.backward:index+self.forward+1]
+                close = window['close']
+                norm_close = close / close.ix[self.backward] - 1
+                print(norm_close)
+                windows.append(norm_close.values)
+                if not windows:
+                    print('no event')
+            return np.mean(windows, 0)
+
+        if orders_buy:
+            window_buy = event_window(orders_buy)
+
+        if orders_sell:
+            window_sell = event_window(orders_sell)
+
+            
+        # plt.plot(range(-self.backward, self.forward+1), window_buy)
+        # plt.axhline(0, color='black')
+        # plt.axvline(0, color='black')        
+        # plt.show()
 
         #return histgram for n-day after
-        nforward = 2
-        returns = []
-        for window in windows:
-            returns.append(window[self.forward+nforward])
+        # nforward = 2
+        # returns = []
+        # for window in windows:
+        #     returns.append(window[self.forward+nforward])
             
-        plt.hist(returns, 50)
-        plt.show()
+        # plt.hist(returns, 50)
+        # plt.show()
+        return window_buy, window_sell
         
 class BackTester(BaseAnalyst):
     def __init__(self, init_cash, symbols, strategy, start_date, end_date):

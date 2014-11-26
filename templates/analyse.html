@@ -18,6 +18,8 @@
     </div>
     
     <div id="chart"></div>
+    <div id="buy"></div>
+    <div id="sell"></div>
     {% if properties %}
 	<table class="table">
 	    <tr>
@@ -61,6 +63,20 @@
 	<script>
 	 var d = {{ returns|tojson|safe }};
 	 compare(d);
+	</script>
+    {% endif %}
+
+    {% if "buy" in windows%}
+	<script>
+	 var buy = {{ windows["buy"]|tojson|safe }};
+	 eventWindow(buy, "#buy", "buy");
+	</script>
+    {% endif %}
+
+    {% if "sell" in windows%}
+	<script>
+	 var sell = {{ windows["sell"]|tojson|safe }};
+	 eventWindow(sell, "#sell", "sell");
 	</script>
     {% endif %}
 {% endblock content %}
