@@ -11,7 +11,6 @@
 		{{ render_field(form.end) }}
 		{{ render_field(form.strategy) }}
 		{{ render_field(form.parameters) }}
-		{{ render_field(form.type) }}
 	    </fieldset>
 	    <input type="submit" value="analyse"/>
 	</form>
@@ -20,6 +19,9 @@
     <div id="chart"></div>
     <div id="buy"></div>
     <div id="sell"></div>
+
+    {{ result['trades'] }}
+    {{ result['fee'] }}
     {% if properties %}
 	<table class="table">
 	    <tr>
@@ -49,7 +51,9 @@
 	    </tr>
 	{% for order in orders %}
 	    <tr>
-		<th>{{ order.symbol }}</th>
+		<th><a href="{{ url_for('stock', sym=order.symbol) }}">
+		    {{ order.symbol }}</a>
+		</th>
 		<th>{{ order.timestamp }}</th>
 		<th>{{ order.share }}</th>
 		<th>{{ order.price }}</th>

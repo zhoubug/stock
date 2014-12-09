@@ -2,6 +2,7 @@ from collections import defaultdict
 import data
 import indicators as ind
 
+
 class Market:
     _cache = {}
     _symbols = []
@@ -81,7 +82,7 @@ class Trader():
             if f >= 1:          # fee by order
                 total_fee += 1
             else:               # percentage by price
-                total_fee += price * f
+                total_fee += abs(price) * f
         total_price = price + total_fee
         
         if total_price > portfolio.cash:
@@ -90,7 +91,7 @@ class Trader():
         else:
             portfolio.cash -= total_price
             portfolio.positions[order.symbol] += order.share
-    
+        return total_fee
 
 class Portfolio():
     def __init__(self, init_cash):
@@ -121,6 +122,7 @@ class Property():
     k = 252
     
     def __init__(self, series):
+        self.values = series
         returns = ind.returnize(series)
         self.cum_return = (returns+1).cumprod()
         self.avg_return = returns.mean()

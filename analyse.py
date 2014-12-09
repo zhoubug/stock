@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn import linear_model
 
+
 class BaseStrategy(object):
     def __init__(self, **kwargs):
         self.orders = []
@@ -32,12 +33,25 @@ class BaseStrategy(object):
         """
         pass
 
+    
 class BaseAnalyst(object):
+    def __init__(self):
+        self.result = {}
+        
+    def analyse(self, orders, start_date, end_date, benchmark=None):
+        pass
+
+    def report(self):
+        pass
+
+
+class Simulator(object):
     def __init__(self, symbols, strategy, start_date, end_date):
         self.strategy = strategy
         self.symbols = symbols
         self.start_date = start_date
         self.end_date = end_date
+        self.analysts = {}
         
     def run(self):
         data = Market.get_stocks(self.symbols, self.start_date, self.end_date)
@@ -52,35 +66,42 @@ class BaseAnalyst(object):
 
         self.strategy.orders.sort(key=lambda o: o.timestamp)
 
-    def analyse(self):
-        pass
+    def add_analyst(self, name, analyst):
+        self.analysts[name] = analyst
 
-    def report(self):
-        pass
+    def remove_analyst(self, name):
+        if name in self.analysts:
+            del self.analysts[name]
+
+    def clear_analyst(self):
+        self.analysts = {}
+
+    def analyse(self):
+        for analyst in self.analysts.values():
+            analyst.analyse(self.strategy.orders,
+                            self.start_date,
+                            self.end_date,
+                            'SH999999')
 
     def get_orders(self):
         return self.strategy.orders
-    
-    def get_benchmark(self, sym, start_date, end_date):
+
+    @staticmethod
+    def get_benchmark(sym, start_date, end_date):
         b_values = Market.get_stock(sym,
                                     start_date,
                                     end_date)
         benchmark = b_values['close']
         return benchmark
-
+        
     
 class EventProfiler(BaseAnalyst):
-    def __init__(self, symbols, strategy, start_date, end_date,
-                 forward=20, backward=20):
-        self.symbols = symbols
-        self.strategy = strategy
-        self.start_date = start_date
-        self.end_date = end_date
+    def __init__(self, forward=10, backward=10):
+        super(EventProfiler, self).__init__()
         self.forward = forward
         self.backward = backward
 
-    def analyse(self, benchmark=None):
-        orders = self.strategy.orders
+    def analyse(self, orders, start_date, end_date, benchmark=None):
         orders_buy = [o for o in orders if o.share > 0]
         orders_sell = [o for o in orders if o.share < 0]
 
@@ -98,19 +119,16 @@ class EventProfiler(BaseAnalyst):
                 window = df.ix[index-self.backward:index+self.forward+1]
                 close = window['close']
                 norm_close = close / close.ix[self.backward] - 1
-                print(norm_close)
                 windows.append(norm_close.values)
                 if not windows:
                     print('no event')
             return np.mean(windows, 0)
 
-        if orders_buy:
-            window_buy = event_window(orders_buy)
-
-        if orders_sell:
-            window_sell = event_window(orders_sell)
-
-            
+        window_buy = event_window(orders_buy) if orders_buy else None
+        window_sell = event_window(orders_sell) if orders_sell else None
+        self.result['window_buy'] = window_buy
+        self.result['window_sell'] = window_sell
+        
         # plt.plot(range(-self.backward, self.forward+1), window_buy)
         # plt.axhline(0, color='black')
         # plt.axvline(0, color='black')        
@@ -124,37 +142,47 @@ class EventProfiler(BaseAnalyst):
             
         # plt.hist(returns, 50)
         # plt.show()
+    def report(self):
+        window_buy = self.result['window_buy']
+        window_sell = self.result['window_sell']
         return window_buy, window_sell
         
 class BackTester(BaseAnalyst):
-    def __init__(self, init_cash, symbols, strategy, start_date, end_date):
+    def __init__(self, init_cash):
         """
         """
-        super(BackTester, self).__init__(symbols, strategy, start_date, end_date)
+        super(BackTester, self).__init__()
         self.portfolio = Portfolio(init_cash)
-
-    def analyse(self, benchmark_sym=None):
-        orders = self.strategy.orders
-        trade_days = Market.get_trade_days(self.start_date, self.end_date)
+        
+    def analyse(self, orders, start_date, end_date, benchmark_sym=None):
+        trade_days = Market.get_trade_days(start_date, end_date)
         values = []
+        fee = 0
         for timestamp in trade_days:
             for order in orders:
                 t = order.timestamp
                 if t == timestamp:
-                    Trader.make_order(self.portfolio, order)
+                    f = Trader.make_order(self.portfolio, order)
+                    fee += f
             value = self.portfolio.get_value(timestamp)
             values.append(value)
 
         benchmark = None
         if benchmark_sym:
-            benchmark = self.get_benchmark(benchmark_sym,
-                                           self.start_date,
-                                           self.end_date)
-
-        return trade_days, pd.Series(values, index=trade_days), benchmark
-        # self.report(trade_days, pd.Series(values), benchmark)
-
-    def report(self, timestamps, values, benchmark=None):
+            benchmark = Simulator.get_benchmark(benchmark_sym,
+                                                start_date,
+                                                end_date)
+            
+        self.result['days'] = trade_days
+        self.result['values'] = pd.Series(values, index=trade_days)
+        self.result['benchmark'] = benchmark
+        self.result['fee'] = fee
+        self.result['trades'] = len(orders)
+        
+    def report(self):
+        timestamps = self.result['days']
+        values = self.result['values']
+        benchmark = self.result['benchmark']
         if benchmark is not None:
             use_benchmark = True
         else:

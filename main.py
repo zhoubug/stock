@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from model import Market
-from analyse import BackTester, BaseStrategy, EventProfiler
+from analyse import BackTester, EventProfiler, Simulator
 import datetime
 from flask import Flask, render_template, request, jsonify, json
 from forms import AnalyseForm
@@ -16,10 +16,16 @@ def home():
     symbols = Market.get_symbol_list()
     return render_template('home.html', symbols=symbols)
 
+
+@app.route('/stocks')
+def stocks():
+    symbols = Market.get_symbol_list()
+    return render_template('home.html', symbols=symbols)    
+
+
 @app.route('/stock/<sym>')
 def stock(sym):
-    prices = Market.get_stock(sym)
-    return render_template('stock.html', sym=sym, prices=prices)
+    return render_template('stock.html', sym=sym)
 
 @app.route('/_stock/<sym>')
 def _stock(sym):
@@ -39,24 +45,23 @@ def analyse():
         parameters = form.parameters.data
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
-        tester = BackTester(100000, symbols,
-                            strategies[strategy](**kwargs),
-                            start, end)
-        profile = EventProfiler(symbols,
-                                strategies[strategy](**kwargs),
-                                start, end)
-        tester.run()
-        profile.run()
-        trade_days, values, bench = tester.analyse(benchmark_sym="SH999999")
-        p_portfolio, p_benchmark = tester.report(trade_days, values,
-                                                 benchmark=bench)
+        simulator = Simulator(symbols, strategies[strategy](**kwargs), start, end)
+        
+        tester = BackTester(100000)
+        profile = EventProfiler()
+        simulator.add_analyst('backtest', tester)
+        simulator.add_analyst('profile', profile)
+        
+        simulator.run()
+        simulator.analyse()
+        p_portfolio, p_benchmark = tester.report()
 
-        window_buy, window_sell = profile.analyse()
+        window_buy, window_sell = profile.report()
         series = {}
         properties = {}
         windows = {}
-        series["result"] = values.to_json(orient="split")
-        series["benchmark"] = bench.to_json(orient="split")
+        series["result"] = p_portfolio.values.to_json(orient="split")
+        series["benchmark"] = p_benchmark.values.to_json(orient="split")
         properties["result"] = p_portfolio
         properties["benchmark"] = p_benchmark
         if window_buy is not None:
@@ -64,9 +69,9 @@ def analyse():
         if window_sell is not None:
             windows["sell"] = window_sell.tolist()
         return render_template("analyse.html", form=form,
-                               orders=tester.get_orders(),
+                               orders=simulator.get_orders(),
                                returns=series, properties=properties,
-                               windows=windows)
+                               windows=windows, result=tester.result)
     else:
         return render_template("analyse.html", form=form)
     
@@ -80,9 +85,6 @@ def compare():
         series[sym] = close.to_json(orient="split")
     return render_template('compare.html', data=series)
 
-@app.route('/stocks')
-def stocks():
-    return 'stocks'
 
 if __name__ == '__main__':
     app.run(port=8000, debug=True)

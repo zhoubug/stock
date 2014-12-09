@@ -10,5 +10,4 @@ class AnalyseForm(Form):
     strategy = SelectField("strategy", choices=[(k, k) for k in strategies.keys()],
                            validators=[validators.input_required()])
     parameters = TextAreaField("parameters")
-    type = SelectField("type", choices=[("event", "event"), ("return", "return")])
     

@@ -27,17 +27,43 @@ class TestStrategy(BaseStrategy):
         close_today = df.ix[timestamps[index]].close
         close_yest = df.ix[timestamps[index-1]].close
 
-        ratio = float(self.parameters.get("return", 0.3))
-        if close_today / close_yest > ratio:
-            self.add_order(symbol, timestamps[index], 200, close_today)
+        ratio = float(self.parameters.get("return", 0.03))
+        if (close_today - close_yest)/close_yest > ratio:
+            self.add_order(symbol, timestamps[index], 1000, close_today)
             if index+5 < len(timestamps):
                 sell_timestamp = timestamps[index+5]
             else:
                 sell_timestamp = timestamps[-1]
-            self.add_order(symbol, sell_timestamp, -200,
+            self.add_order(symbol, sell_timestamp, -1000,
                            df.ix[sell_timestamp].close)
 
 
+class DualThrust(BaseStrategy):
+    def handle(self, symbol, index, data):
+        df = data[symbol]
+        timestamps = df.index
+
+        if index < 4:
+            return
+        n = 4
+        k = 0.7
+        p_today = df.ix[timestamps[index]]
+        window = df.ix[timestamps[index-n:index]]
+        hh = window.high.max()
+        hc = window.close.max()
+        lc = window.close.min()
+        ll = window.low.min()
+        r = max(hh-lc, hc-ll)
+        threshold = p_today.open + k*r
+        if p_today.low <= threshold and p_today.high >= threshold:
+            self.add_order(symbol, timestamps[index], 1000, threshold)
+            if index+4 < len(timestamps):
+                sell_timestamp = timestamps[index+4]
+            else:
+                sell_timestamp = timestamps[-1]
+            self.add_order(symbol, sell_timestamp, -1000,
+                           df.ix[sell_timestamp].open)
             
+        
 strategies = {t[0]: t[1] for t in inspect.getmembers(sys.modules[__name__],
-                                                     lambda x: inspect.isclass(x) and issubclass(x, BaseStrategy) and x != BaseStrategy)}
+                                                    lambda x: inspect.isclass(x) and issubclass(x, BaseStrategy) and x != BaseStrategy)}
