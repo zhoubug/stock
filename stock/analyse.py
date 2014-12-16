@@ -83,6 +83,12 @@ class Simulator(object):
                             self.end_date,
                             'SH999999')
 
+    def report(self):
+        reports = {}
+        for analyst in self.analysts.values():
+            reports[analyst.name] = analyst.report()
+        return reports
+    
     def get_orders(self):
         return self.strategy.orders
 
@@ -96,6 +102,8 @@ class Simulator(object):
         
     
 class EventProfiler(BaseAnalyst):
+    name = "Event Profiler"
+    
     def __init__(self, forward=10, backward=10):
         super(EventProfiler, self).__init__()
         self.forward = forward
@@ -148,6 +156,8 @@ class EventProfiler(BaseAnalyst):
         return window_buy, window_sell
         
 class BackTester(BaseAnalyst):
+    name = "back tester"
+    
     def __init__(self, init_cash):
         """
         """

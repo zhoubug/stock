@@ -1,7 +1,7 @@
 from collections import defaultdict
 import data
 import indicators as ind
-
+from multiprocessing import Process
 
 class Market:
     _cache = {}
@@ -129,10 +129,15 @@ class Property():
         self.std_return = returns.std()
         self.sharpe_ratio = ind.sharpe_ratio(returns, Property.k)
 
-        
-if __name__ == '__main__':
-    import datetime
-    start = datetime.datetime(2014, 10, 8)
-    end = datetime.datetime(2014, 10, 30)
-    days = Market.get_trade_days(start, end)
-    print(Market.get_symbol_list())
+
+class SimTask(Process):
+    def __init__(self, simulator):
+        self.simulator = simulator
+
+    def run(self):
+        self.simulator.run()
+        self.simulator.analyse()
+
+
+class TaskManager():
+    pass

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block content %}    
+    <div id="chart"></div>
+    <div id="buy"></div>
+    <div id="sell"></div>
+    {#
+    {{ result['trades'] }}
+    {{ result['fee'] }}
+    #}
+    {% if properties %}
+	<table class="table">
+	    <tr>
+		<th>name</th>
+		<th>avg return</th>
+		<th>std</th>
+		<th>sharpe ratio</th>
+	    </tr>
+	{% for k in properties %}
+	    <tr>
+		<th>{{ k }}</th>
+		<th>{{ properties[k].avg_return }}</th>
+		<th>{{ properties[k].std_return }}</th>
+		<th>{{ properties[k].sharpe_ratio }}</th>
+	    </tr>
+	{% endfor %}
+	</table>
+    {% endif %}
+    
+    {% if orders %}
+	<table class="table">
+	    <tr>
+		<th>symbol</th>
+		<th>timestamp</th>
+		<th>share</th>
+		<th>price</th>
+	    </tr>
+	{% for order in orders %}
+	    <tr>
+		<th><a href="{{ url_for('stock', sym=order.symbol) }}">
+		    {{ order.symbol }}</a>
+		</th>
+		<th>{{ order.timestamp }}</th>
+		<th>{{ order.share }}</th>
+		<th>{{ order.price }}</th>
+	    </tr>
+	{% endfor %}
+	</table>
+
+    {% endif %}
+	    
+    {% if returns %}
+	<script>
+	 var d = {{ returns|tojson|safe }};
+	 compare(d);
+	</script>
+    {% endif %}
+
+    {% if "buy" in windows%}
+	<script>
+	 var buy = {{ windows["buy"]|tojson|safe }};
+	 eventWindow(buy, "#buy", "buy");
+	</script>
+    {% endif %}
+
+    {% if "sell" in windows%}
+	<script>
+	 var sell = {{ windows["sell"]|tojson|safe }};
+	 eventWindow(sell, "#sell", "sell");
+	</script>
+    {% endif %}
+{% endblock content %}

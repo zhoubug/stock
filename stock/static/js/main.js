@@ -7,7 +7,7 @@ function updateChart(sym){
             dataLength = data.data.length,
             // set the allowed units for data grouping
             groupingUnits = [[
-                'week',                         // unit name
+                'day',                         // unit name
                 [1]                             // allowed multiples
             ], [
                 'month',
@@ -156,4 +156,108 @@ function compare(data){
 	i++;
     }
     createChart();
+}
+
+function eventWindow(window, chart, name){
+    $(chart).highcharts({
+        title: {
+            text: name,
+            x: -20 //center
+        },
+        subtitle: {
+            text: '',
+            x: -20
+        },
+        yAxis: {
+            title: {
+                text: 'return'
+            },
+            plotLines: [{
+                value: 0,
+                width: 1,
+                color: '#808080'
+            }]
+        },
+        tooltip: {
+            valueSuffix: '°C'
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'middle',
+            borderWidth: 0
+        },
+        series: [{
+            name: name,
+            data: window
+        }]
+    });
+}
+
+function scatter(data, chart){
+    $(chart).highcharts({
+        chart: {
+            type: 'scatter',
+            zoomType: 'xy'
+        },
+        title: {
+            text: 'Height Versus Weight of 507 Individuals by Gender'
+        },
+        subtitle: {
+            text: 'Source: Heinz  2003'
+        },
+        xAxis: {
+            title: {
+                enabled: true,
+                text: 'Height (cm)'
+            },
+            startOnTick: true,
+            endOnTick: true,
+            showLastLabel: true
+        },
+        yAxis: {
+            title: {
+                text: 'Weight (kg)'
+            }
+        },
+        legend: {
+            layout: 'vertical',
+            align: 'left',
+            verticalAlign: 'top',
+            x: 100,
+            y: 70,
+            floating: true,
+            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF',
+            borderWidth: 1
+        },
+        plotOptions: {
+            scatter: {
+                marker: {
+                    radius: 5,
+                    states: {
+                        hover: {
+                            enabled: true,
+                            lineColor: 'rgb(100,100,100)'
+                        }
+                    }
+                },
+                states: {
+                    hover: {
+                        marker: {
+                            enabled: false
+                        }
+                    }
+                },
+                tooltip: {
+                    headerFormat: '<b>{series.name}</b><br>',
+                    pointFormat: '{point.x} cm, {point.y} kg'
+                }
+            }
+        },
+        series: [{
+            name: 'points',
+            color: 'rgba(223, 83, 83, .5)',
+            data: data
+        }]
+    });    
 }

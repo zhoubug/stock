@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import time
 
-basedir = 'static/data'
+basedir = '/home/leo/Workspace/stock/stock/static/data'
 
 
 def read_history_file(filename):

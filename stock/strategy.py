@@ -3,6 +3,7 @@ from analyse import BaseStrategy
 import inspect
 import sys
 
+
 class TestStrategy(BaseStrategy):
     """
     parameters:
