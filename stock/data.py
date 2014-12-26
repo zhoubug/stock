@@ -15,7 +15,7 @@ def read_history_file(filename):
         df = pd.read_csv(f, delimiter=',', names=names,
                          skiprows=1, skip_footer=1, index_col='date',
                          parse_dates=True, )
-    return df
+    return df, tokens
 
 
 def read_history_symble(symbol):

@@ -1,21 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <table>
-	<tr>
-	    <th>id</th>
-	    <th>state</th>
-	    <th>op</th>
-	</tr>
-    {% for task in tasks %}
-	<tr>
-	    <td>{{ task.id }} </td>
-	    <td>{{ task.ready() }}</td>
-	    {% if task.ready() %}
-		<td><a href="{{ url_for('task', id=task.id) }}">open</a></td>		
-	    {% else %}
-		<td></td>
-	    {% endif %}
-	</tr>
-    {% endfor %}
+    <table class="table">
+	<thead>
+	    <tr>
+		<th>id</th>
+		<th>state</th>
+		<th>op</th>
+	    </tr>
+	</thead>
+	<tbody>
+	    {% for task in tasks %}
+		<tr>
+		    <td>{{ task.id }} </td>
+		    <td>{{ task.ready() }}</td>
+		    {% if task.ready() %}
+			<td><a href="{{ url_for('task', id=task.id) }}">open</a></td>		
+		    {% else %}
+			<td></td>
+		    {% endif %}
+		</tr>
+	    {% endfor %}
+	</tbody>
+    </table>
 {% endblock content %}

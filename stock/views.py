@@ -1,13 +1,13 @@
 from stock import app, celery
 from model import Market
-from analyse import BackTester, EventProfiler, Simulator
-import datetime
-from flask import render_template, request, flash
+from analyse import BackTester, EventProfiler, Simulator, capm
+from flask import render_template, request, flash, redirect, url_for
 from forms import AnalyseForm
 from strategy import strategies
-
+import json
 
 tasks_dict = {}
+
 @celery.task()
 def simulate(simulator):
     simulator.run()
@@ -16,14 +16,13 @@ def simulate(simulator):
 
 @app.route('/')
 def home():
-    symbols = Market.get_symbol_list()
-    return render_template('home.html', symbols=symbols)
+    return redirect(url_for('stocks'))
 
 
 @app.route('/stocks')
 def stocks():
     symbols = Market.get_symbol_list()
-    return render_template('home.html', symbols=symbols)    
+    return render_template('home.html', symbols=symbols)
 
 
 @app.route('/stock/<sym>')
@@ -32,8 +31,21 @@ def stock(sym):
 
 @app.route('/_stock/<sym>')
 def _stock(sym):
-    prices = Market.get_stock(sym)
-    return prices.to_json(orient="split")
+    stock = Market.get_stock(sym)
+    return stock.prices.to_json(orient="split")
+
+@app.route('/_scatter/<sym>')
+def _scatter(sym):
+    start_date = request.args.get('start', None)
+    end_date = request.args.get('end', None)
+    
+    base = "SH999999"
+    x, y, beta, alpha = capm(sym, base)
+    data = {}
+    data['points'] = zip(x, y)
+    data['beta'] = beta
+    data['alpha'] = alpha
+    return json.dumps(data)
 
 @app.route('/analyse', methods=["GET", "POST"])
 def analyse():
@@ -86,8 +98,8 @@ def compare():
     syms = request.args.get('symbols').split(';')
     series = {}
     for sym in syms:
-        price = Market.get_stock(sym)
-        close = price.close
+        stock = Market.get_stock(sym)
+        close = stock.prices.close
         series[sym] = close.to_json(orient="split")
     return render_template('compare.html', data=series)
 

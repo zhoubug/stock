@@ -1,64 +1,56 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="shortcut icon" type="image/ico" href="{{ url_for('static', filename='img/favicon.ico') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+<html lang="en" class="no-js">
+{% set bootstrap_version = '3.3.1' %}
+{% set modernizer_version = '2.6.2' %}
+{% set jquery_version = '1.9.1' %}
+{% set parsley_version = '1.1.16' %}
+{% set awesome_version = '4.0.1' %}
+{% set bootswatch_version = '3.3.1' %}
+{% set bootswatch_theme = 'simplex' %}
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+    <title>{% block title%}Stock{% endblock %}</title>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/{{ bootstrap_version }}/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/{{ awesome_version }}/css/font-awesome.min.css" rel="stylesheet" >
+    <link href="//maxcdn.bootstrapcdn.com/bootswatch/{{ bootswatch_version }}/{{ bootswatch_theme }}/bootstrap.min.css" rel="stylesheet" >
+
     
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <style>  </style> <!-- Bootstrap -->
+    <link href="/static/css/main.css" rel="stylesheet" />
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    {% block style_block %}{# page-specific CSS #}{% endblock %}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/modernizr/{{ modernizer_version }}/modernizr.min.js"></script>{# Modernizr must be here, above body tag. #}
+    {% block head_script %}{# defer-incapable JS block #}{% endblock %}
+</head>
+<body>
+
+        {% include 'includes/nav.html' %} {# pull in navbar #}
+
+    <div class="container" id="maincontent">
+        {% include 'includes/flash_message.html' %} {# page-level feedback notices #}
+        <div id="body_content">
+            {% block content %}{# main content area #}{% endblock %}
+        </div>
+    </div><!-- /container -->
+    <footer>
+        <div id="footer" class="container">
+            {% block footer %}{% endblock %}
+        </div><!-- /footer -->
+    </footer>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/{{ jquery_version }}/jquery.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/{{ bootstrap_version }}/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/parsley.js/{{ parsley_version }}/parsley-standalone.min.js"></script>
+    <script src="/static/js/main.js"></script>
     <script src="{{ url_for('static', filename='js/highstock.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/exporting.js') }}"></script>
     <script src="{{ url_for('static', filename='js/themes/theme.js') }}"></script>
-    {% block html_head %}{% endblock %}
-
-  </head>
-
-  <body>
-    <div id="outer-wrapper">
-	<div class="navbar">
-	    <div class="navbar-inner">
-		<a class="brand" href="{{ url_for('home') }}">Home</a>
-		<ul class="nav">
-		    <li><a href="{{ url_for('stocks') }}">Stocks</a></li>
-		    <li><a href="{{ url_for('analyse') }}">Analyse</a></li>
-		    <li><a href="{{ url_for('tasks') }}">Tasks</a></li>
-		</ul>
-		
-	    </div>	    
-
-	</div><!--/#topbar-wrapper-->
-
-
-      {% include "includes/flash_message.html" %}
-
-      <div id="sidebar-and-content-wrapper" class="container">
-
-	{% block sidebar_and_content %}
-
-	  <div id="sidebar-wrapper">
-	    {% block sidebar %}
-	    {% endblock %}
-	  </div><!--/#sidebar-wrapper-->
-
-	  <div id="content-wrapper">
-	    <a id="top"></a>
-	    {% block content %}FIXME: content block{% endblock %}
-	    <div class="section-footer">
-	      <p class="hide">
-		<a href="#top">"Back to top"</a>
-	      </p>
-	    </div>
-	  </div><!--/#content-wrapper-->
-
-	{% endblock %}{# sidebar_and_content #}
-
-      </div><!--/#sidebar-and-content-wrapper-->
-
-    </div><!--/#outer-wrapper-->
-
-  </body>
-
+    
+    {% block tail_script %}{# defer-capable JS block #}{% endblock %}
+    {{ profiler_includes|safe }}
+</body>
 </html>
+
+

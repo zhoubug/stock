@@ -1,102 +1,94 @@
-var HOST = document.location.origin;
+function updateChart(data, sym){
+    var ohlc = [],
+        volumes = [],
+        dataLength = data.data.length,
+        // set the allowed units for data grouping
+        groupingUnits = [[
+            'day',                         // unit name
+            [1]                             // allowed multiples
+        ], [
+            'month',
+            [1, 2, 3, 4, 6]
+        ]],
+        i = 0;
 
-function updateChart(sym){
-    $.getJSON(HOST+"/_stock/"+sym, function(data){
-	var ohlc = [],
-            volumes = [],
-            dataLength = data.data.length,
-            // set the allowed units for data grouping
-            groupingUnits = [[
-                'day',                         // unit name
-                [1]                             // allowed multiples
-            ], [
-                'month',
-                [1, 2, 3, 4, 6]
-            ]],
+    var iopen = data.columns.indexOf("open"),
+	iclose = data.columns.indexOf("close"),
+	ihigh = data.columns.indexOf("high"),
+	ilow = data.columns.indexOf("low"),
+	ivolume = data.columns.indexOf("volume");
+    
+    for (i; i < dataLength; i += 1) {
+	var date = data.index[i],
+	    open = data.data[i][iopen],
+	    close = data.data[i][iclose],
+	    high = data.data[i][ihigh],
+	    low = data.data[i][ilow],
+	    volume = data.data[i][ivolume];
+        ohlc.push([
+            date, // the date
+            open, // open
+            high,
+            low,
+            close,
+        ]);
 
-            i = 0;
-
-	var iopen = data.columns.indexOf("open"),
-	    iclose = data.columns.indexOf("close"),
-	    ihigh = data.columns.indexOf("high"),
-	    ilow = data.columns.indexOf("low"),
-	    ivolume = data.columns.indexOf("volume");
-	
-        for (i; i < dataLength; i += 1) {
-	    var date = data.index[i],
-		open = data.data[i][iopen],
-		close = data.data[i][iclose],
-		high = data.data[i][ihigh],
-		low = data.data[i][ilow],
-		volume = data.data[i][ivolume];
-            ohlc.push([
-                date, // the date
-                open, // open
-                high,
-                low,
-                close,
-            ]);
-
-            volumes.push([
-		date,
-		volume
-            ]);
-        }
+        volumes.push([
+	    date,
+	    volume
+        ]);
+    }
 
 
-        // create the chart
-        $('#chart').highcharts('StockChart', {
-
-            rangeSelector: {
-                selected: 1
+    // create the chart
+    $('#chart').highcharts('StockChart', {
+        rangeSelector: {
+            selected: 1
+        },
+        title: {
+            text: sym
+        },
+        yAxis: [{
+            labels: {
+                align: 'right',
+                x: -3
             },
-
             title: {
-                text: sym
+                text: 'OHLC'
             },
+            height: '60%',
+            lineWidth: 2
+        }, {
+            labels: {
+                align: 'right',
+                x: -3
+            },
+            title: {
+                text: 'Volume'
+            },
+            top: '65%',
+            height: '35%',
+            offset: 0,
+            lineWidth: 2
+        }],
 
-            yAxis: [{
-                labels: {
-                    align: 'right',
-                    x: -3
-                },
-                title: {
-                    text: 'OHLC'
-                },
-                height: '60%',
-                lineWidth: 2
-            }, {
-                labels: {
-                    align: 'right',
-                    x: -3
-                },
-                title: {
-                    text: 'Volume'
-                },
-                top: '65%',
-                height: '35%',
-                offset: 0,
-                lineWidth: 2
-            }],
-
-            series: [{
-                type: 'candlestick',
-                name: sym,
-                data: ohlc,
-                dataGrouping: {
-                    units: groupingUnits
-                }
-            }, {
-                type: 'column',
-                name: 'Volume',
-                data: volumes,
-		turboThreshold: Number.MAX_VALUE,
-                yAxis: 1,
-                dataGrouping: {
-                    units: groupingUnits
-                }
-            }]
-	});
+        series: [{
+            type: 'candlestick',
+            name: sym,
+            data: ohlc,
+            dataGrouping: {
+                units: groupingUnits
+            }
+        }, {
+            type: 'column',
+            name: 'Volume',
+            data: volumes,
+	    turboThreshold: Number.MAX_VALUE,
+            yAxis: 1,
+            dataGrouping: {
+                units: groupingUnits
+            }
+        }]
     });
 }
 
@@ -197,67 +189,77 @@ function eventWindow(window, chart, name){
 function scatter(data, chart){
     $(chart).highcharts({
         chart: {
-            type: 'scatter',
-            zoomType: 'xy'
+	    type: 'scatter',
+	    zoomType: 'xy'
         },
         title: {
-            text: 'Height Versus Weight of 507 Individuals by Gender'
-        },
-        subtitle: {
-            text: 'Source: Heinz  2003'
+	    text: 'scatter, beta:' + data.beta + ', alpha:' + data.alpha
         },
         xAxis: {
-            title: {
+	    title: {
                 enabled: true,
-                text: 'Height (cm)'
-            },
-            startOnTick: true,
-            endOnTick: true,
-            showLastLabel: true
+                text: 'symbol'
+	    },
+	    startOnTick: true,
+	    endOnTick: true,
+	    showLastLabel: true
         },
         yAxis: {
-            title: {
-                text: 'Weight (kg)'
-            }
+	    title: {
+                text: 'bench'
+	    }
         },
         legend: {
-            layout: 'vertical',
-            align: 'left',
-            verticalAlign: 'top',
-            x: 100,
-            y: 70,
-            floating: true,
-            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF',
-            borderWidth: 1
+	    layout: 'vertical',
+	    align: 'left',
+	    verticalAlign: 'top',
+	    x: 100,
+	    y: 70,
+	    floating: true,
+	    backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF',
+	    borderWidth: 1
         },
         plotOptions: {
-            scatter: {
+	    scatter: {
                 marker: {
-                    radius: 5,
-                    states: {
+		    radius: 5,
+		    states: {
                         hover: {
-                            enabled: true,
-                            lineColor: 'rgb(100,100,100)'
+			    enabled: true,
+			    lineColor: 'rgb(100,100,100)'
                         }
-                    }
+		    }
                 },
                 states: {
-                    hover: {
+		    hover: {
                         marker: {
-                            enabled: false
+			    enabled: false
                         }
-                    }
+		    }
                 },
                 tooltip: {
-                    headerFormat: '<b>{series.name}</b><br>',
-                    pointFormat: '{point.x} cm, {point.y} kg'
+		    headerFormat: '<b>{series.name}</b><br>',
+		    pointFormat: '{point.x}, {point.y},'
                 }
-            }
+	    }
         },
         series: [{
-            name: 'points',
-            color: 'rgba(223, 83, 83, .5)',
-            data: data
-        }]
+	    name: 'points',
+	    color: 'rgba(223, 83, 83, .5)',
+	    data: data.points
+        }, {
+	    type: 'line',
+	    name: 'Regression Line',
+	    data: [[-0.03, -0.03*data.beta+data.alpha], [0.03, 0.03*data.beta+data.alpha]],
+	    marker: {
+		enabled: false
+	    },
+	    states: {
+		hover: {
+		    lineWidth: 0
+		}
+	    },
+	    enableMouseTracking: false
+	}]
     });    
 }

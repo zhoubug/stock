@@ -10,8 +10,8 @@ class TestStrategy(BaseStrategy):
     `return`:
     """
     def handle(self, symbol, index, data):
-        df = data[symbol]
-        timestamps = df.index
+        stock = data[symbol]
+        timestamps = stock.timestamps()
 
         if index < 2:
             return
@@ -24,9 +24,10 @@ class TestStrategy(BaseStrategy):
         
         # if day_2.open > day_2.close and day_2.close > day_1_high and \
         #    day_0.open < day_0.close and day_0.open > day_1_high:
-        #     self.add_order(symbol, timestamps[index], 200, day_0.close)   
-        close_today = df.ix[timestamps[index]].close
-        close_yest = df.ix[timestamps[index-1]].close
+        #     self.add_order(symbol, timestamps[index], 200, day_0.close)
+
+        close_today = stock.get_price_index(index).close
+        close_yest = stock.get_price_index(index-1).close
 
         ratio = float(self.parameters.get("return", 0.03))
         if (close_today - close_yest)/close_yest > ratio:
@@ -36,20 +37,20 @@ class TestStrategy(BaseStrategy):
             else:
                 sell_timestamp = timestamps[-1]
             self.add_order(symbol, sell_timestamp, -1000,
-                           df.ix[sell_timestamp].close)
+                           stock.get_price_timestamp(sell_timestamp).close)
 
 
 class DualThrust(BaseStrategy):
     def handle(self, symbol, index, data):
-        df = data[symbol]
-        timestamps = df.index
+        stock = data[symbol]
+        timestamps = stock.timestamps()
 
         if index < 4:
             return
         n = 4
         k = 0.7
-        p_today = df.ix[timestamps[index]]
-        window = df.ix[timestamps[index-n:index]]
+        p_today = stock.get_price_index(index)
+        window = stock.get_prices_index(index-n, index)
         hh = window.high.max()
         hc = window.close.max()
         lc = window.close.min()
@@ -63,8 +64,8 @@ class DualThrust(BaseStrategy):
             else:
                 sell_timestamp = timestamps[-1]
             self.add_order(symbol, sell_timestamp, -1000,
-                           df.ix[sell_timestamp].open)
+                           stock.get_price_timestamp(sell_timestamp).open)
             
         
 strategies = {t[0]: t[1] for t in inspect.getmembers(sys.modules[__name__],
-                                                    lambda x: inspect.isclass(x) and issubclass(x, BaseStrategy) and x != BaseStrategy)}
+                                                     lambda x: inspect.isclass(x) and issubclass(x, BaseStrategy) and x != BaseStrategy)}

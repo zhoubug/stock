@@ -2,16 +2,15 @@
 {% from "_formhelpers.html" import render_field %}
 
 {% block content %}
-    <div>
-	<form method="post" action="{{ url_for('analyse') }}">
-	    <fieldset>
-		{{ form.hidden_tag() }}
-		{{ render_field(form.symbols) }}
-		{{ render_field(form.start) }}
-		{{ render_field(form.end) }}
-		{{ render_field(form.strategy) }}
-		{{ render_field(form.parameters) }}
-	    </fieldset>
+    <div class="row">
+	<form class="form-horizontal" method="post" action="{{ url_for('analyse') }}">
+	    {{ form.hidden_tag() }}
+	    {{ render_field(form.symbols) }}
+	    {{ render_field(form.start) }}
+	    {{ render_field(form.end) }}
+	    {{ render_field(form.strategy) }}
+	    {{ render_field(form.parameters) }}
+
 	    <input type="submit" value="analyse"/>
 	</form>
     </div>

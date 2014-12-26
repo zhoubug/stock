@@ -4,6 +4,7 @@ import indicators as ind
 import numpy as np
 import pandas as pd
 from sklearn import linear_model
+import datetime
 
 
 class BaseStrategy(object):
@@ -54,15 +55,17 @@ class Simulator(object):
         self.analysts = {}
         
     def run(self):
-        data = Market.get_stocks(self.symbols, self.start_date, self.end_date)
-        self.strategy.initial(data)
+        stocks = Market.get_stocks(self.symbols,
+                                   self.start_date,
+                                   self.end_date)
+        self.strategy.initial(stocks)
         for sym in self.symbols:
-            self.strategy.initial_stock(sym, data)
+            self.strategy.initial_stock(sym, stocks)
 
         for sym in self.symbols:
-            d = data[sym]
-            for i in range(0, len(d.index)):
-                self.strategy.handle(sym, i, data)
+            stock = stocks[sym]
+            for i in range(0, len(stock.timestamps())):
+                self.strategy.handle(sym, i, stocks)
 
         self.strategy.orders.sort(key=lambda o: o.timestamp)
 
@@ -94,10 +97,10 @@ class Simulator(object):
 
     @staticmethod
     def get_benchmark(sym, start_date, end_date):
-        b_values = Market.get_stock(sym,
-                                    start_date,
-                                    end_date)
-        benchmark = b_values['close']
+        bench = Market.get_stock(sym,
+                                 start_date,
+                                 end_date)
+        benchmark = bench.prices['close']
         return benchmark
         
     
@@ -118,13 +121,15 @@ class EventProfiler(BaseAnalyst):
             for order in orders:
                 timestamp = order.timestamp
                 sym = order.symbol
-                df = Market.get_stock(sym)
-                index = df.index.searchsorted(timestamp)
-
-                if index < self.backward or (len(df.index)-index-1) < self.forward:
+                stock = Market.get_stock(sym)
+                index = stock.timestamp_index(timestamp)
+                timestamps = stock.timestamps()
+                
+                if index < self.backward or (len(timestamps)-index-1) < self.forward:
                     continue
 
-                window = df.ix[index-self.backward:index+self.forward+1]
+                window = stock.get_prices_index(index-self.backward,
+                                                index+self.forward+1)
                 close = window['close']
                 norm_close = close / close.ix[self.backward] - 1
                 windows.append(norm_close.values)
@@ -232,9 +237,12 @@ class BackTester(BaseAnalyst):
         # plt.show()
         
 
-def capm(symbol, index, start_date, end_date, visual=False):
-    s = Market.get_stock(symbol, start_date, end_date)
-    i = Market.get_stock(index, start_date, end_date)
+def capm(symbol, index, start_date=None, end_date=None, visual=False):
+    stock = Market.get_stock(symbol, start_date, end_date)
+    bench = Market.get_stock(index, start_date, end_date)
+    s = stock.prices
+    i = bench.prices
+    
     y = s['close']
     y = ind.returnize(y)
     x = i.ix[s.index]['close']
@@ -247,27 +255,17 @@ def capm(symbol, index, start_date, end_date, visual=False):
     beta = regr.coef_[0]
     alpha = regr.intercept_
 
-    if visual:
-        plt.scatter(x.values, y.values)
-        plt.plot(X, regr.predict(X), 'r')
-        plt.show()
-    return beta, alpha
+    # if visual:
+    #     plt.scatter(x.values, y.values)
+    #     plt.plot(X, regr.predict(X), 'r')
+    #     plt.show()
+    return x.values, y.values, beta, alpha
             
 if __name__ == '__main__':
     start_date = datetime.datetime(2014, 5, 1)
     end_date = datetime.datetime(2014, 11, 13)
     
-    # symbols = Market.get_symbol_list()
-    # symbols = [s for s in symbols if s[2] == '6'][0:10]
-
-    # strategy = TestStrategy()
-
-    # # tester = BackTester(10000, symbols, strategy, start_date, end_date)
-    # tester = EventProfiler(symbols, strategy, start_date, end_date)
-    # tester.run()
-    # orders = tester.get_orders()
-    # tester.analyse()
-    symbols = Market.get_symbol_list('SH')
+    symbols = Market.get_symbol_list('SH600')
     index = 'SH999999'
     if index in symbols:
         symbols.remove(index)
@@ -279,7 +277,7 @@ if __name__ == '__main__':
     for symbol in symbols:
         i += 1
         print('{}:{}/{}'.format(symbol, i, size))
-        beta, alpha = capm(symbol, 'SH999999', start_date, end_date)
+        x, y, beta, alpha = capm(symbol, 'SH999999', start_date, end_date)
         print(beta, alpha)
         results.append((symbol, beta, alpha))
 

@@ -1,12 +1,25 @@
 {% extends "home.html" %}
 
-
 {% block content %}
-    <script>
-     $(document).ready(updateChart("{{ sym }}"));
-    </script>    
     <h1>{{sym}}</h1>
     <div id="chart"></div>
     <div id="compare"></div>
     <div id="scatter"></div>
 {% endblock content %}
+
+{% block tail_script %}
+    <script>
+     $(document).ready(
+	 $.getJSON("{{ url_for('_stock', sym=sym) }}" , function(data){
+	     updateChart(data, "{{ sym }}");
+	 })
+
+     );
+     $(document).ready(
+	 $.getJSON("{{ url_for('_scatter', sym=sym)}}", function(data){
+	     scatter(data, "#scatter");
+	 })	 
+     );
+
+    </script>    
+{% endblock tail_script %}
