@@ -5,17 +5,20 @@ from analyse import capm
 from flask import render_template, request, flash, redirect, url_for
 from forms import AnalyseForm
 from strategy import strategies
+import algorithms as algos
+from algorithms import test
 import json
 from docutils.core import publish_parts
+from zipline import TradingAlgorithm
 
+from rq import Queue
+from redis import Redis
+
+redis_conn = Redis()
+q = Queue(connection=redis_conn)
 
 tasks_dict = {}
 
-# @celery.task()
-# def simulate(simulator):
-#     simulator.run()
-#     simulator.analyse()
-#     return simulator.report()
 
 @app.route('/')
 def home():
@@ -59,7 +62,7 @@ def analyse():
     form = AnalyseForm(request.form)
     if request.method == "POST":
         prefix = form.symbols.data
-        symbols = filter(lambda s: s.startswith(prefix), Market.get_symbol_list())
+        symbols = filter(lambda s: s.startswith(prefix), data.get_basics().index)
 
         start = form.start.data
         end = form.end.data
@@ -68,19 +71,12 @@ def analyse():
         parameters = form.parameters.data
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
-        simulator = Simulator(symbols, strategies[strategy](**kwargs),
-                              start, end)
 
-        for a in analysts:
-            if a in ANALYSTS:
-                analyst = ANALYSTS[a]()
-                simulator.add_analyst(a, analyst)
-
-        r = simulate.delay(simulator)
-        tasks_dict[r.id] = r
-        flash('task added')
+        d = data.get_hist('600000')
+        algo = TradingAlgorithm(initialize=test.initialize,
+                                handle_data=test.handle_data)
+        q.enqueue(algo.run, d)
     return render_template("analyse.html", form=form,
-                           analysts=ANALYSTS.values(),
                            strategies=strategies.values(),
                            publish_parts=publish_parts)
 
