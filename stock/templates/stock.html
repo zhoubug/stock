@@ -1,25 +1,50 @@
 {% extends "home.html" %}
 
 {% block content %}
-    <h1>{{sym}}</h1>
+    <h1>{{ stock['name'] }}</h1>
     <div id="chart"></div>
     <div id="compare"></div>
     <div id="scatter"></div>
+
+    <div class="row">
+	<div class="col-md-4">
+	    <table class="table">
+		<tbody>
+		    {% for index in stock.index %}
+			<tr>
+			    <td>{{ index }}</td>
+			    <td>{{ stock[index] }}</td>
+			</tr>
+		    {% endfor %}
+		</tbody>
+	    </table>
+	</div>
+
+	<div class="col-md-4">
+	    <p>
+		{{ capm.summary_as_matrix.to_html()|safe }}
+	    </p>
+	</div>
+	<div class="col-md-4">
+	</div>
+    </div>
+
+
 {% endblock content %}
 
 {% block tail_script %}
     <script>
-     $(document).ready(
-	 $.getJSON("{{ url_for('_stock', sym=sym) }}" , function(data){
-	     updateChart(data, "{{ sym }}");
-	 })
+    $(document).ready(
+	    $.getJSON("{{ url_for('_stock', sym=stock.symbol) }}" , function(data){
+		    updateChart(data, "{{ stock.symbol }}");
+	    })
 
-     );
-     $(document).ready(
-	 $.getJSON("{{ url_for('_scatter', sym=sym)}}", function(data){
-	     scatter(data, "#scatter");
-	 })	 
-     );
+    );
+    $(document).ready(
+	    $.getJSON("{{ url_for('_scatter', sym=stock.symbol)}}", function(data){
+		    scatter(data, "#scatter");
+	    })
+    );
 
-    </script>    
+    </script>
 {% endblock tail_script %}

@@ -59,7 +59,8 @@ class Stock:
     def get_price_timestamp(self, timestamp):
         day = self.prices.ix[timestamp]
         return day
-        
+
+    
 class Market:
     _cache = {}
     _symbols = []

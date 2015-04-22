@@ -9,6 +9,8 @@ class TestStrategy(BaseStrategy):
     parameters:
     `return`:
     """
+    name = "Test Strategy"
+    
     def handle(self, symbol, index, data):
         stock = data[symbol]
         timestamps = stock.timestamps()
@@ -41,6 +43,11 @@ class TestStrategy(BaseStrategy):
 
 
 class DualThrust(BaseStrategy):
+    """
+    
+    """
+    name = "Dual Thrust"
+    
     def handle(self, symbol, index, data):
         stock = data[symbol]
         timestamps = stock.timestamps()

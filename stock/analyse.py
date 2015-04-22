@@ -12,7 +12,7 @@ class BaseStrategy(object):
     def __init__(self, **kwargs):
         self.orders = []
         self.parameters = kwargs
-        
+
     def add_order(self, sym, timestamp, share, price):
         order = Order(sym, timestamp, share, price)
         self.orders.append(order)
@@ -28,18 +28,18 @@ class BaseStrategy(object):
         this will be called for every stock
         """
         pass
-    
+
     def handle(self, symbol, timestamp, data):
         """
         make orders here
         """
         pass
 
-    
+
 class BaseAnalyst(object):
     def __init__(self):
         self.result = {}
-        
+
     def analyse(self, orders, start_date, end_date, benchmark=None):
         pass
 
@@ -54,7 +54,7 @@ class Simulator(object):
         self.start_date = start_date
         self.end_date = end_date
         self.analysts = {}
-        
+
     def run(self):
         stocks = Market.get_stocks(self.symbols,
                                    self.start_date,
@@ -92,7 +92,7 @@ class Simulator(object):
         for analyst in self.analysts.values():
             reports[analyst.name] = analyst.report()
         return reports
-    
+
     def get_orders(self):
         return self.strategy.orders
 
@@ -103,11 +103,13 @@ class Simulator(object):
                                  end_date)
         benchmark = bench.prices['close']
         return benchmark
-        
-    
+
+
 class EventProfiler(BaseAnalyst):
+    """
+    """
     name = "Event Profiler"
-    
+
     def __init__(self, forward=10, backward=10):
         super(EventProfiler, self).__init__()
         self.forward = forward
@@ -125,7 +127,7 @@ class EventProfiler(BaseAnalyst):
                 stock = Market.get_stock(sym)
                 index = stock.timestamp_index(timestamp)
                 timestamps = stock.timestamps()
-                
+
                 if index < self.backward or (len(timestamps)-index-1) < self.forward:
                     continue
 
@@ -142,10 +144,10 @@ class EventProfiler(BaseAnalyst):
         window_sell = event_window(orders_sell) if orders_sell else None
         self.result['window_buy'] = window_buy
         self.result['window_sell'] = window_sell
-        
+
         # plt.plot(range(-self.backward, self.forward+1), window_buy)
         # plt.axhline(0, color='black')
-        # plt.axvline(0, color='black')        
+        # plt.axvline(0, color='black')
         # plt.show()
 
         #return histgram for n-day after
@@ -153,23 +155,25 @@ class EventProfiler(BaseAnalyst):
         # returns = []
         # for window in windows:
         #     returns.append(window[self.forward+nforward])
-            
+
         # plt.hist(returns, 50)
         # plt.show()
     def report(self):
         window_buy = self.result['window_buy']
         window_sell = self.result['window_sell']
         return window_buy, window_sell
-        
+
 class BackTester(BaseAnalyst):
+    """
+    """
     name = "back tester"
-    
-    def __init__(self, init_cash):
+
+    def __init__(self, init_cash=100000):
         """
         """
         super(BackTester, self).__init__()
         self.portfolio = Portfolio(init_cash)
-        
+
     def analyse(self, orders, start_date, end_date, benchmark_sym=None):
         trade_days = Market.get_trade_days(start_date, end_date)
         values = []
@@ -188,13 +192,13 @@ class BackTester(BaseAnalyst):
             benchmark = Simulator.get_benchmark(benchmark_sym,
                                                 start_date,
                                                 end_date)
-            
+
         self.result['days'] = trade_days
         self.result['values'] = pd.Series(values, index=trade_days)
         self.result['benchmark'] = benchmark
         self.result['fee'] = fee
         self.result['trades'] = len(orders)
-        
+
     def report(self):
         timestamps = self.result['days']
         values = self.result['values']
@@ -203,29 +207,29 @@ class BackTester(BaseAnalyst):
             use_benchmark = True
         else:
             use_benchmark = False
-            
+
         p_portfolio = Property(values)
         if use_benchmark:
             p_benchmark = Property(benchmark)
 
-        # print("The final value of the portfolio is {}".format(values[-1])) 
-        print("detail of the performance of the portfolio")
-        print("{} to {}".format(timestamps[0], timestamps[-1]))
+        # print("The final value of the portfolio is {}".format(values[-1]))
+        # print("detail of the performance of the portfolio")
+        # print("{} to {}".format(timestamps[0], timestamps[-1]))
 
-        print("Sharpe Ratio of Fund: {}".format(p_portfolio.sharpe_ratio))
-        if use_benchmark:
-            print("Sharpe Ratio of benchmark: {}".format(p_benchmark.sharpe_ratio))
+        # print("Sharpe Ratio of Fund: {}".format(p_portfolio.sharpe_ratio))
+        # if use_benchmark:
+        #     print("Sharpe Ratio of benchmark: {}".format(p_benchmark.sharpe_ratio))
 
-        # print("Total Return of Fund: {}".format(cum_return[-1]))
-        # if benchmark:
-        #     print("Total Return of benchmark: {}".format(b_cum_return[-1]))
-        print("Standard Deviation of Fund: {}".format(p_portfolio.std_return))
-        if use_benchmark:
-            print("Standard Deviation of benchmark: {}".format(p_benchmark.std_return))
-            
-        print("Average Daily Return of Fund: {}".format(p_portfolio.avg_return))
-        if use_benchmark:
-            print("Average Daily Return of benchmar: {}".format(p_benchmark.avg_return))
+        # # print("Total Return of Fund: {}".format(cum_return[-1]))
+        # # if benchmark:
+        # #     print("Total Return of benchmark: {}".format(b_cum_return[-1]))
+        # print("Standard Deviation of Fund: {}".format(p_portfolio.std_return))
+        # if use_benchmark:
+        #     print("Standard Deviation of benchmark: {}".format(p_benchmark.std_return))
+
+        # print("Average Daily Return of Fund: {}".format(p_portfolio.avg_return))
+        # if use_benchmark:
+        #     print("Average Daily Return of benchmar: {}".format(p_benchmark.avg_return))
 
         if use_benchmark:
             return p_portfolio, p_benchmark

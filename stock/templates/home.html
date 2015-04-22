@@ -1,12 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <ul>
-    {% for sym in symbols %}
-	<li>
-	    <a href="{{ url_for('stock', sym=sym) }}">{{sym}}</a>
-	    <a href="{{ url_for('compare', symbols=sym + ";SH999999") }}">compare</a>
-	</li>
+    <table class="table">
+	<tbody>
+	    {% for index, sym in symbols.iterrows() %}
+		<tr>
+		    <td>
+			{{ index }}
+		    </td>
+		    <td>
+			<a href="{{ url_for('stock', code=index) }}">{{sym['name'] }}</a>
+		    </td>
+		</tr>
     {% endfor %}
-    </ul>
+	</tbody>
+    </table>
 {% endblock content %}

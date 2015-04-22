@@ -1,18 +1,21 @@
-from stock import app, celery
+from stock import app
 from model import Market
-from analyse import BackTester, EventProfiler, Simulator, capm
+import data
+from analyse import capm
 from flask import render_template, request, flash, redirect, url_for
 from forms import AnalyseForm
 from strategy import strategies
 import json
+from docutils.core import publish_parts
+
 
 tasks_dict = {}
 
-@celery.task()
-def simulate(simulator):
-    simulator.run()
-    simulator.analyse()
-    return simulator.report()
+# @celery.task()
+# def simulate(simulator):
+#     simulator.run()
+#     simulator.analyse()
+#     return simulator.report()
 
 @app.route('/')
 def home():
@@ -21,13 +24,17 @@ def home():
 
 @app.route('/stocks')
 def stocks():
-    symbols = Market.get_symbol_list()
+    symbols = data.get_basics()
     return render_template('home.html', symbols=symbols)
 
 
-@app.route('/stock/<sym>')
-def stock(sym):
-    return render_template('stock.html', sym=sym)
+@app.route('/stock/<code>')
+def stock(code):
+    stock = data.get_basics(code)
+    regr = capm(code, 'sh', '2015-01-01', '2015-04-21')
+
+    return render_template('stock.html', code=code,
+                           stock=stock, capm=regr)
 
 @app.route('/_stock/<sym>')
 def _stock(sym):
@@ -38,7 +45,7 @@ def _stock(sym):
 def _scatter(sym):
     start_date = request.args.get('start', None)
     end_date = request.args.get('end', None)
-    
+
     base = "SH999999"
     x, y, beta, alpha = capm(sym, base)
     data = {}
@@ -57,42 +64,26 @@ def analyse():
         start = form.start.data
         end = form.end.data
         strategy = form.strategy.data
+        analysts = form.analysts.data
         parameters = form.parameters.data
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
-        simulator = Simulator(symbols, strategies[strategy](**kwargs), start, end)
-        
-        tester = BackTester(100000)
-        profile = EventProfiler()
-        simulator.add_analyst('backtest', tester)
-        simulator.add_analyst('profile', profile)
+        simulator = Simulator(symbols, strategies[strategy](**kwargs),
+                              start, end)
+
+        for a in analysts:
+            if a in ANALYSTS:
+                analyst = ANALYSTS[a]()
+                simulator.add_analyst(a, analyst)
 
         r = simulate.delay(simulator)
         tasks_dict[r.id] = r
         flash('task added')
-        # simulator.run()
-        # simulator.analyse()
-        # p_portfolio, p_benchmark = tester.report()
+    return render_template("analyse.html", form=form,
+                           analysts=ANALYSTS.values(),
+                           strategies=strategies.values(),
+                           publish_parts=publish_parts)
 
-        # window_buy, window_sell = profile.report()
-        # series = {}
-        # properties = {}
-        # windows = {}
-        # series["result"] = p_portfolio.values.to_json(orient="split")
-        # series["benchmark"] = p_benchmark.values.to_json(orient="split")
-        # properties["result"] = p_portfolio
-        # properties["benchmark"] = p_benchmark
-        # if window_buy is not None:
-        #     windows["buy"] = window_buy.tolist()
-        # if window_sell is not None:
-        #     windows["sell"] = window_sell.tolist()
-        # return render_template("analyse.html", form=form,
-        #                        orders=simulator.get_orders(),
-        #                        returns=series, properties=properties,
-        #                        windows=windows, result=tester.result)
-    
-    return render_template("analyse.html", form=form)
-    
 @app.route('/compare')
 def compare():
     syms = request.args.get('symbols').split(';')
@@ -103,10 +94,6 @@ def compare():
         series[sym] = close.to_json(orient="split")
     return render_template('compare.html', data=series)
 
-@app.route('/tasks')
-def tasks():
-    return render_template('tasks.html', tasks=tasks_dict.values())
-
 
 @app.route('/task/<id>')
 def task(id):
@@ -116,7 +103,7 @@ def task(id):
 
         p_portfolio, p_benchmark = result[BackTester.name]
         window_buy, window_sell = result[EventProfiler.name]
-        
+
         series = {}
         properties = {}
         windows = {}
@@ -130,7 +117,6 @@ def task(id):
             windows["sell"] = window_sell.tolist()
         return render_template("result.html",
                                returns=series, properties=properties,
-                               windows=windows)        
+                               windows=windows)
     else:
         return 'task not ready'
-    

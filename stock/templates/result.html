@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_formhelpers.html" import render_field %}
+{% import "lib.html" as lib %}
 
 {% block content %}    
     <div id="chart"></div>
@@ -57,17 +57,20 @@
 	</script>
     {% endif %}
 
-    {% if "buy" in windows%}
+    {% if windows %}
+    {% if "buy" in windows %}
 	<script>
 	 var buy = {{ windows["buy"]|tojson|safe }};
 	 eventWindow(buy, "#buy", "buy");
 	</script>
     {% endif %}
 
-    {% if "sell" in windows%}
+    {% if "sell" in windows %}
 	<script>
 	 var sell = {{ windows["sell"]|tojson|safe }};
 	 eventWindow(sell, "#sell", "sell");
 	</script>
+    {% endif %}    
     {% endif %}
+
 {% endblock content %}

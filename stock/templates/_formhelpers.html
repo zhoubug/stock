@@ -30,3 +30,11 @@
     </div>
 		</div>
 {% endmacro %}
+
+{% macro render_submit(name) %}
+    <div class="form-group">
+	<div class="col-sm-offset-2 col-sm-4">
+	    <button class="btn" type="submit">{{name}}</button>
+	</div>		
+    </div>
+{% endmacro %}

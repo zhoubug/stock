@@ -23,6 +23,13 @@
     <link rel="shortcut icon" href="/static/img/favicon.ico" />
     {% block style_block %}{# page-specific CSS #}{% endblock %}
     <script src="//cdnjs.cloudflare.com/ajax/libs/modernizr/{{ modernizer_version }}/modernizr.min.js"></script>{# Modernizr must be here, above body tag. #}
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/{{ jquery_version }}/jquery.min.js"></script>
+    <script src="{{ url_for('static', filename='js/highstock.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/exporting.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/themes/theme.js') }}"></script>
+    <script src="/static/js/main.js"></script>
+    
     {% block head_script %}{# defer-incapable JS block #}{% endblock %}
 </head>
 <body>
@@ -40,13 +47,8 @@
             {% block footer %}{% endblock %}
         </div><!-- /footer -->
     </footer>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/{{ jquery_version }}/jquery.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/{{ bootstrap_version }}/js/bootstrap.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/parsley.js/{{ parsley_version }}/parsley-standalone.min.js"></script>
-    <script src="/static/js/main.js"></script>
-    <script src="{{ url_for('static', filename='js/highstock.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/modules/exporting.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/themes/theme.js') }}"></script>
     
     {% block tail_script %}{# defer-capable JS block #}{% endblock %}
     {{ profiler_includes|safe }}

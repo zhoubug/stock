@@ -14,11 +14,16 @@
 		<tr>
 		    <td>{{ task.id }} </td>
 		    <td>{{ task.ready() }}</td>
-		    {% if task.ready() %}
-			<td><a href="{{ url_for('task', id=task.id) }}">open</a></td>		
-		    {% else %}
-			<td></td>
-		    {% endif %}
+		    <td>
+			{% if task.ready() %}
+			    <a href="{{ url_for('task', id=task.id) }}">
+				open
+			    </a>		
+			{% endif %}
+			<a href="{{ url_for('delete_task', id=task.id) }}">
+			    delete
+			</a>
+		    </td>
 		</tr>
 	    {% endfor %}
 	</tbody>
