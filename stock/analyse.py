@@ -1,9 +1,10 @@
 from model import *
+import data
 import matplotlib.pyplot as plt
 import indicators as ind
 import numpy as np
 import pandas as pd
-from sklearn import linear_model
+from pandas.stats.ols import OLS
 import datetime
 
 
@@ -235,51 +236,22 @@ class BackTester(BaseAnalyst):
         #     plt.plot(timestamps, b_cum_return)
         #     plt.legend(['Sim', 'Benchmark'])
         # plt.show()
-        
 
-def capm(symbol, index, start_date=None, end_date=None, visual=False):
-    stock = Market.get_stock(symbol, start_date, end_date)
-    bench = Market.get_stock(index, start_date, end_date)
-    s = stock.prices
-    i = bench.prices
-    
-    y = s['close']
+
+def capm(symbol, index, start_date=None, end_date=None):
+    stock = data.get_hist(symbol, start_date, end_date)
+    bench = data.get_hist(index, start_date, end_date)
+
+    y = stock.close
     y = ind.returnize(y)
-    x = i.ix[s.index]['close']
+    x = stock.ix[bench.index]['close']
     x = ind.returnize(x)
-    X = [[a] for a in x.values]
 
-    regr = linear_model.LinearRegression(fit_intercept=True)
+    regr = OLS(y, x)
+    return regr
 
-    regr.fit(X[1:], y[1:])
-    beta = regr.coef_[0]
-    alpha = regr.intercept_
 
-    # if visual:
-    #     plt.scatter(x.values, y.values)
-    #     plt.plot(X, regr.predict(X), 'r')
-    #     plt.show()
-    return x.values, y.values, beta, alpha
-            
-if __name__ == '__main__':
-    start_date = datetime.datetime(2014, 5, 1)
-    end_date = datetime.datetime(2014, 11, 13)
-    
-    symbols = Market.get_symbol_list('SH600')
-    index = 'SH999999'
-    if index in symbols:
-        symbols.remove(index)
-
-    symbols = ['SH600881', 'SH600064', 'SH600739', 'SH600219', 'SH600362', 'SH600028', 'SH601088', 'SH601989', 'SH600750', 'SH600298', 'SH601607']
-    results = []
-    i = 0
-    size = len(symbols)
-    for symbol in symbols:
-        i += 1
-        print('{}:{}/{}'.format(symbol, i, size))
-        x, y, beta, alpha = capm(symbol, 'SH999999', start_date, end_date)
-        print(beta, alpha)
-        results.append((symbol, beta, alpha))
-
-    # results.sort(key=lambda s: s[2], reverse=True)
-    # print(results[0:20])
+ANALYSTS = {
+    EventProfiler.name: EventProfiler,
+    BackTester.name: BackTester
+}
