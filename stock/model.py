@@ -1,22 +1,13 @@
 from collections import defaultdict
 import data
 import indicators as ind
-from multiprocessing import Process
 
-
-class Stock:
-    def __init__(self, name, symbol, prices):
-        self.name = name
-        self.symbol = symbol
-        self.prices = prices
-
-    def _get_trade_index(self, start_date=None, end_date=None):
-        df = self.prices
+def trade_index(df, start_date, end_date):
         if start_date:
             start_i = df.index.searchsorted(start_date)
         else:
             start_i = 0
-            
+
         if end_date:
             end_i = df.index.searchsorted(end_date)
             if end_i < len(df.index) and df.index[end_i] == end_date:
@@ -24,7 +15,17 @@ class Stock:
         else:
             end_i = len(df.index)
         return start_i, end_i
-    
+
+class Stock:
+    def __init__(self, code, prices, basics):
+        self.code = code
+        self.prices = prices
+        self.basics = basics
+
+    def _get_trade_index(self, start_date=None, end_date=None):
+        df = self.prices
+        return trade_index(df, start_date, end_date)
+
     def get_trade_days(self, start_date=None, end_date=None):
         start_i, end_i = self._get_trade_index(start_date, end_date)
         return self.prices.index[start_i:end_i]
@@ -32,14 +33,14 @@ class Stock:
     def get_stock(self, start_date, end_date):
         start_i, end_i = self._get_trade_index(start_date, end_date)
         s = self.prices.ix[start_i:end_i]
-        return Stock(self.name, self.symbol, s)
+        return Stock(self.code, s, self.basics)
 
     def get_price(self, date):
         df = self.prices
         index = df.index.searchsorted(date)
         day = df.ix[index]
         return day
-    
+
     def timestamp_index(self, timestamp):
         return self.prices.index.searchsorted(timestamp)
 
@@ -55,16 +56,16 @@ class Stock:
         timestamps = self.prices.index
         days = self.prices.ix[timestamps[start:end]]
         return days
-    
+
     def get_price_timestamp(self, timestamp):
         day = self.prices.ix[timestamp]
         return day
 
-    
+
 class Market:
     _cache = {}
     _symbols = []
-    
+
     @staticmethod
     def get_stocks(symbols, start_date=None, end_date=None):
         stocks = {}
@@ -76,21 +77,23 @@ class Market:
     def get_stock(symbol, start_date=None, end_date=None):
         stock = Market._get_stock(symbol)
         return stock.get_stock(start_date, end_date)
-    
+
     @staticmethod
     def get_stock_price(symbol, date):
         stock = Market._get_stock(symbol)
         return stock.get_price(date)
-    
+
     @staticmethod
     def get_trade_days(start_date, end_date):
-        stock = Market._get_stock('SH999999')
-        return stock.get_trade_days(start_date, end_date)
-    
+        sh = data.get_hist('sh')
+        start_i, end_i = trade_index(sh, start_date, end_date)
+        return sh.index[start_i: end_i]
+
+
     @staticmethod
     def get_symbol_list(market=None):
         if not Market._symbols:
-            Market._symbols = data.read_symbol_list()
+            Market._symbols = data.get_basics().index
             Market._symbols.sort()
         if market:
             return filter(lambda s: s.startswith(market), Market._symbols)
@@ -100,13 +103,19 @@ class Market:
     @staticmethod
     def _get_stock(symbol):
         if symbol not in Market._cache:
-            df, tokens = data.read_history_symble(symbol)
-            stock = Stock(tokens[1], symbol, df)
+            hist = data.get_hist(symbol)
+            basics = data.get_basics(symbol)
+            stock = Stock(symbol, hist, basics)
             Market._cache[symbol] = stock
         return Market._cache[symbol]
 
-    
+
 class Trader():
+    # fee parameters which will be a list
+    # in the list, value in (0, 1) will be multipled by order value
+    # value more than 1 will be added
+    # for example, if sell fee is [0.0008, 2]
+    # then fee = 0.0008*order_price + 2
     fees = {'buy': [0.0008], 'sell': [0.0008, 1]}
 
     @staticmethod
@@ -123,7 +132,7 @@ class Trader():
             else:               # percentage by price
                 total_fee += abs(price) * f
         total_price = price + total_fee
-        
+
         if total_price > portfolio.cash:
             # no money to buy new stock
             pass
@@ -132,7 +141,11 @@ class Trader():
             portfolio.positions[order.symbol] += order.share
         return total_fee
 
+
 class Portfolio():
+    """
+    is current cash and stocks
+    """
     def __init__(self, init_cash):
         self.cash = init_cash
         self.positions = defaultdict(long)
@@ -144,7 +157,7 @@ class Portfolio():
             value += p.close*share
         return value
 
-    
+
 class Order():
     def __init__(self, symbol, timestamp, share, price):
         self.symbol = symbol
@@ -155,11 +168,11 @@ class Order():
     def __str__(self):
         return '{}: {} {} {}'.format(self.timestamp, self.symbol,
                                      self.share, self.price)
-    
+
 
 class Property():
     k = 252
-    
+
     def __init__(self, series):
         self.values = series
         returns = ind.returnize(series)
@@ -167,16 +180,3 @@ class Property():
         self.avg_return = returns.mean()
         self.std_return = returns.std()
         self.sharpe_ratio = ind.sharpe_ratio(returns, Property.k)
-
-
-class SimTask(Process):
-    def __init__(self, simulator):
-        self.simulator = simulator
-
-    def run(self):
-        self.simulator.run()
-        self.simulator.analyse()
-
-
-class TaskManager():
-    pass

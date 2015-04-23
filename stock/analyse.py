@@ -48,27 +48,23 @@ class BaseAnalyst(object):
 
 
 class Simulator(object):
-    def __init__(self, symbols, strategy, start_date, end_date):
+    def __init__(self, strategy):
         self.strategy = strategy
-        self.symbols = symbols
-        self.start_date = start_date
-        self.end_date = end_date
         self.analysts = {}
 
-    def run(self):
-        stocks = Market.get_stocks(self.symbols,
-                                   self.start_date,
-                                   self.end_date)
+    def run(self, stocks, start_date, end_date):
         self.strategy.initial(stocks)
-        for sym in self.symbols:
-            self.strategy.initial_stock(sym, stocks)
+        for code in stocks.keys():
+            self.strategy.initial_stock(code, stocks)
 
-        for sym in self.symbols:
-            stock = stocks[sym]
+        for code in stocks.keys():
+            stock = stocks[code]
             for i in range(0, len(stock.timestamps())):
-                self.strategy.handle(sym, i, stocks)
+                self.strategy.handle(code, i, stocks)
 
         self.strategy.orders.sort(key=lambda o: o.timestamp)
+
+        return self.analyse(start_date, end_date)
 
     def add_analyst(self, name, analyst):
         self.analysts[name] = analyst
@@ -80,12 +76,14 @@ class Simulator(object):
     def clear_analyst(self):
         self.analysts = {}
 
-    def analyse(self):
+    def analyse(self, start_date, end_date):
+        results = {}
         for analyst in self.analysts.values():
-            analyst.analyse(self.strategy.orders,
-                            self.start_date,
-                            self.end_date,
-                            'SH999999')
+            results[analyst.name] = analyst.analyse(self.strategy.orders,
+                                                    start_date,
+                                                    end_date)
+        return results
+
 
     def report(self):
         reports = {}
@@ -145,19 +143,6 @@ class EventProfiler(BaseAnalyst):
         self.result['window_buy'] = window_buy
         self.result['window_sell'] = window_sell
 
-        # plt.plot(range(-self.backward, self.forward+1), window_buy)
-        # plt.axhline(0, color='black')
-        # plt.axvline(0, color='black')
-        # plt.show()
-
-        #return histgram for n-day after
-        # nforward = 2
-        # returns = []
-        # for window in windows:
-        #     returns.append(window[self.forward+nforward])
-
-        # plt.hist(returns, 50)
-        # plt.show()
     def report(self):
         window_buy = self.result['window_buy']
         window_sell = self.result['window_sell']
@@ -198,6 +183,8 @@ class BackTester(BaseAnalyst):
         self.result['benchmark'] = benchmark
         self.result['fee'] = fee
         self.result['trades'] = len(orders)
+
+        return self.result
 
     def report(self):
         timestamps = self.result['days']

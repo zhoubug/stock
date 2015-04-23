@@ -14,10 +14,15 @@ from zipline import TradingAlgorithm
 from rq import Queue
 from redis import Redis
 
+from analyse import Simulator, BackTester
+from strategy import TestStrategy
+from model import Market
+
+
 redis_conn = Redis()
 q = Queue(connection=redis_conn)
 
-tasks_dict = {}
+job_dict = {}
 
 
 @app.route('/')
@@ -72,13 +77,29 @@ def analyse():
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
 
-        d = data.get_hist('600000')
-        algo = TradingAlgorithm(initialize=test.initialize,
-                                handle_data=test.handle_data)
-        q.enqueue(algo.run, d)
+        start = '2014-01-01'
+        end = '2014-12-31'
+        # d = data.get_hist('600000', start, end)
+
+        # algo = TradingAlgorithm(initialize=test.initialize,
+        #                         handle_data=test.handle_data,
+        #                         namespace={},
+        #                         capital_base=10e6)
+
+        d = Market.get_stocks(symbols)
+        strategy = TestStrategy()
+        analyst = BackTester()
+        sim = Simulator(strategy)
+        sim.add_analyst('backtest', analyst)
+        # sim.run(d, start, end)
+
+        job = q.enqueue(sim.run, d, start, end)
+        job_dict[job.id] = job
+
     return render_template("analyse.html", form=form,
                            strategies=strategies.values(),
                            publish_parts=publish_parts)
+
 
 @app.route('/compare')
 def compare():
@@ -90,29 +111,37 @@ def compare():
         series[sym] = close.to_json(orient="split")
     return render_template('compare.html', data=series)
 
+@app.route('/jobs')
+def jobs():
+    return render_template('jobs.html', jobs=job_dict.values())
 
-@app.route('/task/<id>')
-def task(id):
-    task = tasks_dict[id]
-    if task.ready():
-        result = task.result
-
-        p_portfolio, p_benchmark = result[BackTester.name]
-        window_buy, window_sell = result[EventProfiler.name]
-
-        series = {}
-        properties = {}
-        windows = {}
-        series["result"] = p_portfolio.values.to_json(orient="split")
-        series["benchmark"] = p_benchmark.values.to_json(orient="split")
-        properties["result"] = p_portfolio
-        properties["benchmark"] = p_benchmark
-        if window_buy is not None:
-            windows["buy"] = window_buy.tolist()
-        if window_sell is not None:
-            windows["sell"] = window_sell.tolist()
-        return render_template("result.html",
-                               returns=series, properties=properties,
-                               windows=windows)
+@app.route('/job/<id>')
+def job(id):
+    j = job_dict[id]
+    if j.result:
+        return str(j.result)
+        return render_template('result.html')
     else:
-        return 'task not ready'
+        return 'task not done'
+    # if task.ready():
+    #     result = task.result
+
+    #     p_portfolio, p_benchmark = result[BackTester.name]
+    #     window_buy, window_sell = result[EventProfiler.name]
+
+    #     series = {}
+    #     properties = {}
+    #     windows = {}
+    #     series["result"] = p_portfolio.values.to_json(orient="split")
+    #     series["benchmark"] = p_benchmark.values.to_json(orient="split")
+    #     properties["result"] = p_portfolio
+    #     properties["benchmark"] = p_benchmark
+    #     if window_buy is not None:
+    #         windows["buy"] = window_buy.tolist()
+    #     if window_sell is not None:
+    #         windows["sell"] = window_sell.tolist()
+    #     return render_template("result.html",
+    #                            returns=series, properties=properties,
+    #                            windows=windows)
+    # else:
+    #     return 'task not ready'

@@ -10,19 +10,16 @@
 	    </tr>
 	</thead>
 	<tbody>
-	    {% for task in tasks %}
+	    {% for job in jobs %}
 		<tr>
-		    <td>{{ task.id }} </td>
-		    <td>{{ task.ready() }}</td>
+		    <td>{{ job.id }} </td>
+		    <td>{{ job.result != None }}</td>
 		    <td>
-			{% if task.ready() %}
-			    <a href="{{ url_for('task', id=task.id) }}">
+			{% if job.result %}
+			    <a href="{{ url_for('job', id=job.id) }}">
 				open
-			    </a>		
+			    </a>
 			{% endif %}
-			<a href="{{ url_for('delete_task', id=task.id) }}">
-			    delete
-			</a>
 		    </td>
 		</tr>
 	    {% endfor %}
