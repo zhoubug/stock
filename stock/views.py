@@ -115,12 +115,19 @@ def compare():
 def jobs():
     return render_template('jobs.html', jobs=job_dict.values())
 
+import matplotlib.pyplot as plt, mpld3
+
 @app.route('/job/<id>')
 def job(id):
     j = job_dict[id]
     if j.result:
-        return str(j.result)
-        return render_template('result.html')
+        results = j.result
+        result = results[BackTester.name]
+        fig, ax = plt.subplots()
+
+        result['values'].plot(ax=ax)
+        fig = mpld3.fig_to_html(fig)
+        return render_template('result.html', fig=fig)
     else:
         return 'task not done'
     # if task.ready():

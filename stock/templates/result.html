@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% import "lib.html" as lib %}
 
-{% block content %}    
+{% block content %}
     <div id="chart"></div>
     <div id="buy"></div>
     <div id="sell"></div>
+
+    {{ fig|safe }}
+
     {#
     {{ result['trades'] }}
     {{ result['fee'] }}
@@ -27,7 +30,7 @@
 	{% endfor %}
 	</table>
     {% endif %}
-    
+
     {% if orders %}
 	<table class="table">
 	    <tr>
@@ -49,7 +52,7 @@
 	</table>
 
     {% endif %}
-	    
+
     {% if returns %}
 	<script>
 	 var d = {{ returns|tojson|safe }};
@@ -70,7 +73,7 @@
 	 var sell = {{ windows["sell"]|tojson|safe }};
 	 eventWindow(sell, "#sell", "sell");
 	</script>
-    {% endif %}    
+    {% endif %}
     {% endif %}
 
 {% endblock content %}
