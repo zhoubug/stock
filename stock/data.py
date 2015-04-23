@@ -102,7 +102,19 @@ def get_basics(code=None):
 
 def get_hist(code, start_date=None, end_date=None):
     f = os.path.join(base_dir, 'hist.h5')
-    df = pd.read_hdf(f, code)
-    if start_date and end_date:
-        df = df[start_date:end_date]
-    return df
+    result = {}
+    if isinstance(code, str):
+        df = pd.read_hdf(f, code)
+        result[code] = df
+    elif isinstance(code, list):
+        for c in list:
+            df = pd.read_hdf(f, c)
+            result[c] = df
+
+    for k, v in result.iteritems():
+        if start_date and end_date:
+            v = v[start_date:end_date]
+            v.index = v.index.to_datetime().tz_localize('UTC')
+            v['price'] = v['close']
+            result[k] = v
+    return pd.Panel(result)
