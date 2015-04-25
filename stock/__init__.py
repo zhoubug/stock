@@ -40,3 +40,4 @@ app.jinja_env.add_extension('jinja2.ext.loopcontrols')
 # celery = make_celery(app)
 
 import views
+import jobs

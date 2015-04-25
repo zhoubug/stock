@@ -1,28 +1,60 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <table class="table">
-	<thead>
-	    <tr>
-		<th>id</th>
-		<th>state</th>
-		<th>op</th>
-	    </tr>
-	</thead>
-	<tbody>
-	    {% for job in jobs %}
-		<tr>
-		    <td>{{ job.id }} </td>
-		    <td>{{ job.result != None }}</td>
-		    <td>
-			{% if job.result %}
-			    <a href="{{ url_for('job', id=job.id) }}">
-				open
-			    </a>
-			{% endif %}
-		    </td>
-		</tr>
-	    {% endfor %}
-	</tbody>
-    </table>
+    <div class="row">
+	<div class="col-sm-6">
+	    <h4>jobs</h4>
+	    <table class="table">
+		<thead>
+		    <tr>
+			<th>id</th>
+			<th>state</th>
+			<th>op</th>
+		    </tr>
+		</thead>
+		<tbody>
+		    {% for job in jobs %}
+			<tr>
+			    <td>{{ job.id }} </td>
+			    <td>{{ job.result != None }}</td>
+			    <td>
+				{% if job.result %}
+				    <a href="{{ url_for('job', id=job.id) }}">
+					open
+				    </a>
+				{% endif %}
+			    </td>
+			</tr>
+		    {% endfor %}
+		</tbody>
+	    </table>
+	</div>
+
+	<div class="col-sm-6">
+	    <h4>scheduled jobs</h4>
+	    <table class="table">
+		<thead>
+		    <tr>
+			<th>name</th>
+			<th>time</th>
+			<th>op</th>
+		    </tr>
+		</thead>
+		<tbody>
+		    {% for job, time in scheduled %}
+			<tr>
+			    <td>{{ job.func_name }}</td>
+			    <td>{{ time }}</td>
+			    <td>
+				<a href="{{ url_for('cancel', id=job.id) }}">cancel</a>
+			    </td>
+			</tr>
+
+		    {% endfor %}
+
+		</tbody>
+	    </table>
+	</div>
+    </div>
+
 {% endblock content %}

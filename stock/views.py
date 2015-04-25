@@ -17,12 +17,23 @@ from redis import Redis
 from analyse import Simulator, BackTester
 from strategy import TestStrategy
 from model import Market
+from jobs import scheduler
 
 
 redis_conn = Redis()
 q = Queue(connection=redis_conn)
 
 job_dict = {}
+
+
+def run_analyse(simulator, data, start, end, *args, **kwargs):
+    res = {}
+    res['parameters'] = {
+
+    }
+
+    res['result'] = simulator.run(data, start, end, *args, **kwargs)
+    return res
 
 
 @app.route('/')
@@ -93,7 +104,7 @@ def analyse():
         sim.add_analyst('backtest', analyst)
         # sim.run(d, start, end)
 
-        job = q.enqueue(sim.run, d, start, end)
+        job = q.enqueue(run_analyse, sim, d, start, end)
         job_dict[job.id] = job
 
     return render_template("analyse.html", form=form,
@@ -113,7 +124,9 @@ def compare():
 
 @app.route('/jobs')
 def jobs():
-    return render_template('jobs.html', jobs=job_dict.values())
+    scheduled_jobs = scheduler.get_jobs(with_times=True)
+    return render_template('jobs.html', jobs=job_dict.values(),
+                           scheduled=scheduled_jobs)
 
 import matplotlib.pyplot as plt, mpld3
 
@@ -121,7 +134,7 @@ import matplotlib.pyplot as plt, mpld3
 def job(id):
     j = job_dict[id]
     if j.result:
-        results = j.result
+        results = j.result['result']
         result = results[BackTester.name]
         fig, ax = plt.subplots()
 
@@ -152,3 +165,8 @@ def job(id):
     #                            windows=windows)
     # else:
     #     return 'task not ready'
+
+@app.route('/job/cancel/<id>')
+def cancel(id):
+    scheduler.cancel(id)
+    return redirect(url_for('jobs'))
