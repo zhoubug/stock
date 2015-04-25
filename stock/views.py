@@ -14,27 +14,13 @@ from zipline import TradingAlgorithm
 from rq import Queue
 from redis import Redis
 
-from analyse import Simulator, BackTester
-from strategy import TestStrategy
-from model import Market
-from jobs import scheduler
+from jobs import scheduler, run_analyse
 
 
 redis_conn = Redis()
 q = Queue(connection=redis_conn)
 
 job_dict = {}
-
-
-def run_analyse(simulator, data, start, end, *args, **kwargs):
-    res = {}
-    res['parameters'] = {
-
-    }
-
-    res['result'] = simulator.run(data, start, end, *args, **kwargs)
-    return res
-
 
 @app.route('/')
 def home():
@@ -90,21 +76,10 @@ def analyse():
 
         start = '2014-01-01'
         end = '2014-12-31'
-        # d = data.get_hist('600000', start, end)
 
-        # algo = TradingAlgorithm(initialize=test.initialize,
-        #                         handle_data=test.handle_data,
-        #                         namespace={},
-        #                         capital_base=10e6)
-
-        d = Market.get_stocks(symbols)
-        strategy = TestStrategy()
-        analyst = BackTester()
-        sim = Simulator(strategy)
-        sim.add_analyst('backtest', analyst)
-        # sim.run(d, start, end)
-
-        job = q.enqueue(run_analyse, sim, d, start, end)
+        job = q.enqueue(run_analyse,
+                        test.initialize, test.handle_data,
+                        symbols, start, end)
         job_dict[job.id] = job
 
     return render_template("analyse.html", form=form,
@@ -134,11 +109,23 @@ import matplotlib.pyplot as plt, mpld3
 def job(id):
     j = job_dict[id]
     if j.result:
-        results = j.result['result']
-        result = results[BackTester.name]
-        fig, ax = plt.subplots()
+        results = j.result['results']
 
-        result['values'].plot(ax=ax)
+        fig = plt.figure()
+        ax1 = fig.add_subplot(211)
+        results.portfolio_value.plot(ax=ax1)
+
+        ax2 = fig.add_subplot(212)
+        results[['close', 'short_mavg', 'long_mavg']].plot(ax=ax2)
+
+        buy = results.buy.fillna(False)
+        sell = results.sell.fillna(False)
+        ax2.plot(results[buy].index, results.short_mavg[buy],
+                 '^', markersize=10, color='m')
+        ax2.plot(results[sell].index, results.short_mavg[sell],
+                 'v', markersize=10, color='k')
+        plt.legend(loc=0)
+
         fig = mpld3.fig_to_html(fig)
         return render_template('result.html', fig=fig)
     else:
