@@ -1,5 +1,6 @@
 import pandas as pd
 import data
+from rq import get_current_job
 from model import Market
 from redis import Redis
 from rq_scheduler import Scheduler
@@ -31,14 +32,17 @@ def run_analyse(initialize, handle_data, codes, start, end):
                                        capital_base=10e6,
                                        sim_params=sim_params)
 
-    d = Market.get_stocks(codes, start, end)
-    d = {k: v.prices for k, v in d.iteritems()}
-    d = pd.Panel(d)
+    stocks = Market.get_stocks(codes, start, end)
+    d = pd.Panel(stocks)
 
     res = zp_algo.run(d)
     results = {}
     results['parameters'] = {}
     results['results'] = res
+    results['report'] = zp_algo.risk_report
+    results['orders'] = zp_algo.blotter.orders
+    job = get_current_job(connection=Redis())
+    data.save_result(job.id, results)
     return results
 
 def update_data():

@@ -1,6 +1,8 @@
 from collections import defaultdict
 import data
 import indicators as ind
+from calendar_cn import trading_days
+
 
 def trade_index(df, start_date, end_date):
         if start_date:
@@ -16,51 +18,6 @@ def trade_index(df, start_date, end_date):
             end_i = len(df.index)
         return start_i, end_i
 
-class Stock:
-    def __init__(self, code, prices, basics):
-        self.code = code
-        self.prices = prices
-        self.basics = basics
-
-    def _get_trade_index(self, start_date=None, end_date=None):
-        df = self.prices
-        return trade_index(df, start_date, end_date)
-
-    def get_trade_days(self, start_date=None, end_date=None):
-        start_i, end_i = self._get_trade_index(start_date, end_date)
-        return self.prices.index[start_i:end_i]
-
-    def get_stock(self, start_date, end_date):
-        start_i, end_i = self._get_trade_index(start_date, end_date)
-        s = self.prices.ix[start_i:end_i]
-        return Stock(self.code, s, self.basics)
-
-    def get_price(self, date):
-        df = self.prices
-        index = df.index.searchsorted(date)
-        day = df.ix[index]
-        return day
-
-    def timestamp_index(self, timestamp):
-        return self.prices.index.searchsorted(timestamp)
-
-    def timestamps(self):
-        return self.prices.index
-
-    def get_price_index(self, index):
-        timestamps = self.prices.index
-        day = self.prices.ix[timestamps[index]]
-        return day
-
-    def get_prices_index(self, start, end):
-        timestamps = self.prices.index
-        days = self.prices.ix[timestamps[start:end]]
-        return days
-
-    def get_price_timestamp(self, timestamp):
-        day = self.prices.ix[timestamp]
-        return day
-
 
 class Market:
     _cache = {}
@@ -75,8 +32,9 @@ class Market:
 
     @staticmethod
     def get_stock(symbol, start_date=None, end_date=None):
-        stock = Market._get_stock(symbol)
-        return stock.get_stock(start_date, end_date)
+        df = Market._get_stock(symbol)
+        start_i, end_i = trade_index(df, start_date, end_date)
+        return df.ix[start_i:end_i].copy()
 
     @staticmethod
     def get_stock_price(symbol, date):
@@ -104,9 +62,13 @@ class Market:
     def _get_stock(symbol):
         if symbol not in Market._cache:
             hist = data.get_hist(symbol)
-            basics = data.get_basics(symbol)
-            stock = Stock(symbol, hist, basics)
-            Market._cache[symbol] = stock
+            full = hist.reindex(trading_days)
+            full['volume'].fillna(0, inplace=True)
+            full['turnover'].fillna(0, inplace=True)
+            full['p_change'].fillna(0, inplace=True)
+            full['close'].fillna(method='pad', inplace=True)
+            full['price'].fillna(method='pad', inplace=True)
+            Market._cache[symbol] = full
         return Market._cache[symbol]
 
 
