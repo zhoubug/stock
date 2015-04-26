@@ -2,13 +2,63 @@ import tushare as ts
 import pandas as pd
 import os
 import datetime
+import cPickle
 
-base_dir = os.path.join('/home/leo/Workspace/stock/static', 'data')
+BASE_DIR = (os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_DIR = os.path.join(BASE_DIR, 'static', 'data')
 INDEX = ['sh', 'sz', 'hs300', 'sz50', 'zxb', 'cyb']
+DATE_FORMAT = "%Y-%m-%d"
+
+def save_result(id, result):
+    filename = os.path.join(DATA_DIR, 'results', id)
+    with open(filename, 'wb') as f:
+        cPickle.dump(result, f)
+
+def get_result(id):
+    filename = os.path.join(DATA_DIR, 'results', id)
+    with open(filename, 'rb') as f:
+        result = cPickle.load(f)
+    return result
+
+def delete_result(id):
+    f = os.path.join(DATA_DIR, 'results', id)
+    os.remove(f)
+
+def get_results():
+    results_dir = os.path.join(DATA_DIR, 'results')
+    ids = [f for f in os.listdir(results_dir)]
+    results = {}
+    for id in ids:
+        result = get_result(id)
+        results[id] = result
+    return results
+
+
+def _update_data(f, name, data):
+    try:
+        # if there is old data, append new to old
+        pre = pd.read_hdf(f, name)
+        p = pre.append(data)
+
+        # clean duplicated data
+        p = p.groupby(p.index).last()
+        p.to_hdf(f, name)
+    except Exception as e:
+        data.to_hdf(f, name)
+
+def time_range(start, end):
+    if not end:
+        d = datetime.date.today()
+        end = d.strftime(DATE_FORMAT)
+    if not start:
+        d = datetime.datetime.strptime(end, DATE_FORMAT)
+        delta = datetime.timedelta(days=365)
+        start = (d - delta).strftime(DATE_FORMAT)
+    return start, end
 
 def update_basics():
     basics = ts.get_stock_basics()
-    f = os.path.join(base_dir, 'basics.h5')
+    f = os.path.join(DATA_DIR, 'basics.h5')
     basics.to_hdf(f, 'basics')
 
     today = datetime.date.today()
@@ -22,7 +72,7 @@ def update_basics():
     year = current_year
     season = current_season
     for i in range(length):
-        f = os.path.join(base_dir, 'basics-{0}-{1}.h5'.format(year, season))
+        f = os.path.join(DATA_DIR, 'basics-{0}-{1}.h5'.format(year, season))
         if os.path.exists(f):
             continue
         print(f)
@@ -49,29 +99,35 @@ def update_basics():
             season = 4
             year -= 1
 
-def update_h():
+def update_h(start=None, end=None):
     basics = get_basics()
     size = len(basics)
     count = 0
 
-    f = os.path.join(base_dir, 'h.h5')
+    start, end = time_range(start, end)
+
+    f = os.path.join(DATA_DIR, 'h.h5')
     for code in basics.index:
         print(code)
         try:
-            h = ts.get_h_data(code)
-            h.to_hdf(f, code)
+            h = ts.get_h_data(code, start, end)
+            _update_data(f, code, h)
             count += 1
         except Exception as e:
-            print('error')
+            print(e)
     return count, size
 
 
-def update_hist():
-    f = os.path.join(base_dir, 'hist.h5')
+def update_hist(start=None, end=None):
+    start, end = time_range(start, end)
+    f = os.path.join(DATA_DIR, 'hist.h5')
+
     for index in INDEX:
         print(index)
         try:
+            # for index, just rewrite all the data
             hist = ts.get_hist_data(index)
+            # _update_data(f, index, hist)
             hist.to_hdf(f, index)
         except Exception as e:
             print(e)
@@ -80,42 +136,31 @@ def update_hist():
     for code in basics.index:
         print(code)
         try:
-            hist = ts.get_hist_data(code)
-            hist.to_hdf(f, code)
+            hist = ts.get_hist_data(code, start, end)
+            _update_data(f, code, hist)
         except Exception as e:
             print(e)
 
 
-def get_h(code):
-    f = os.path.join(base_dir, 'h.h5')
-    df = pd.read_hdf(f, code)
-    return df
-
-
 def get_basics(code=None):
-    f = os.path.join(base_dir, 'basics.h5')
+    f = os.path.join(DATA_DIR, 'basics.h5')
     df = pd.read_hdf(f, 'basics')
     if code:
         df = df.loc[code]
     return df
 
 
-def get_hist(code, start_date=None, end_date=None):
-    f = os.path.join(base_dir, 'hist.h5')
-    return pd.read_hdf(f, code)
-    # result = {}
-    # if isinstance(code, str):
-    #     df = pd.read_hdf(f, code)
-    #     result[code] = df
-    # elif isinstance(code, list):
-    #     for c in list:
-    #         df = pd.read_hdf(f, c)
-    #         result[c] = df
+def get_h(code):
+    f = os.path.join(DATA_DIR, 'h.h5')
+    df = pd.read_hdf(f, code)
+    df['price'] = df['close']
+    df.index = df.index.to_datetime().tz_localize('UTC')
+    return df
 
-    # for k, v in result.iteritems():
-    #     if start_date and end_date:
-    #         v = v[start_date:end_date]
-    #         v.index = v.index.to_datetime().tz_localize('UTC')
-    #         v['price'] = v['close']
-    #         result[k] = v
-    # return pd.Panel(result)
+
+def get_hist(code, start=None, end=None):
+    f = os.path.join(DATA_DIR, 'hist.h5')
+    df = pd.read_hdf(f, code)
+    df['price'] = df['close']
+    df.index = df.index.to_datetime().tz_localize('UTC')
+    return df
