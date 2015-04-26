@@ -1,12 +1,82 @@
 {% extends "base.html" %}
 {% import "lib.html" as lib %}
 
+
 {% block content %}
     <div class="row">
+	settings
+    </div>
+    <div class="row" roll="tabpanel">
 	<div class="col-md-2">
+	    <ul class="nav nav-pills nav-stacked" role="tablist">
+		<li role="result" class="active">
+		    <a href="#result" aria-controls="result" role="tab" data-toggle="tab">result</a>
+		</li>
+		<li role="orders">
+		    <a href="#orders" aria-controls="orders" rol="tab" data-toggle="tab">orders</a>
+		</li>
+		<li>
+		    RISK METRICS
+		</li>
+		<li role="beta">
+		    <a href="#beta" aria-controls="beta" role="tab" data-toggle="tab">beta</a>
+		</li>
+		<li role="alpha">
+		    <a href="#alpha" aria-controls="alpha" role="tab" data-toggle="tab">alpha</a>
+		</li>
+		<li role="sharpe">
+		    <a href="#sharpe" aria-controls="sharpe" role="tab" data-toggle="tab">sharpe</a>
+		</li>
+		<li role="information">
+		    <a href="#information" aria-controls="information" role="tab" data-toggle="tab">information</a>
+		</li>
+		<li role="max-drawdown">
+		    <a href="#max-drawdown" aria-controls="max-drawdown" role="tab" data-toggle="tab">max drawdown</a>
+		</li>
+	    </ul>
 	</div>
-	<div class="col-md-10">
-	    {{ fig|safe }}
+	<div class="col-md-10 tab-content">
+	    <div role="tabpanel" class="tab-pane active" id="result">
+		{{ fig|safe }}
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="orders">
+		<table class="table">
+		    <thead>
+			<tr>
+			    <th>time</th>
+			    <th>code</th>
+			    <th>amount</th>
+			    <th>price</th>
+			    <th>commission</th>
+		    </thead>
+		    <tbody>
+			{% for order in orders %}
+			    <tr>
+				<td>{{ order.dt }}</td>
+				<td>{{ order.sid }}</td>
+				<td>{{ order.amount }}</td>
+				<td>{{ order.limit }}</td>
+				<td>{{ order.commission }}</td>
+			    </tr>
+			{% endfor %}
+		    </tbody>
+		</table>
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="beta">
+		{{ lib.render_risk_metrics_table(report, 'beta') }}
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="alpha">
+		{{ lib.render_risk_metrics_table(report, 'alpha') }}
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="sharpe">
+		{{ lib.render_risk_metrics_table(report, 'sharpe') }}
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="information">
+		{{ lib.render_risk_metrics_table(report, 'information') }}
+	    </div>
+	    <div role="tabpanel" class="tab-pane" id="max-drawdown">
+		{{ lib.render_risk_metrics_table(report, 'max_drawdown') }}
+	    </div>
 	</div>
     </div>
 

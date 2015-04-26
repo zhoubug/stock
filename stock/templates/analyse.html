@@ -9,13 +9,12 @@
 		{{ render_field(form.symbols) }}
 		{{ render_field(form.start) }}
 		{{ render_field(form.end) }}
-		{{ render_field(form.analysts)}}
-		{{ render_field(form.strategy) }}
 		{{ render_field(form.parameters) }}
 		{{ render_submit("analyse") }}
 	    </form>
 	</div>
 	<div class="col-sm-6">
+	    {#
 	    <h4>Analysts</h4>
 	    <table class="table">
 		<thead>
@@ -37,6 +36,7 @@
 		    {% endfor %}
 		</tbody>
 	    </table>
+	    #}
 	    <h4>Strategies</h4>
 
 	    <table class="table">

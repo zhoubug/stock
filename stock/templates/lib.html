@@ -1,0 +1,59 @@
+{% macro render_backtest_result(result) %}
+
+{% endmacro %}
+
+{% macro render_event_result(result) %}
+    {% if "buy" in result %}
+	<script>
+	 var buy = {{ result["buy"]|tojson|safe }};
+	 eventWindow(buy, "#buy", "buy");
+	</script>
+    {% endif %}
+
+    {% if "sell" in resutl %}
+	<script>
+	 var sell = {{ result["sell"]|tojson|safe }};
+	 eventWindow(sell, "#sell", "sell");
+
+	</script>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_risk_metrics_table(report, element) %}
+    <table class="table">
+	<thead>
+	    <tr>
+		<th>{{ element }}</th>
+		<th>1 month</th>
+		<th>3 month</th>
+		<th>6 month</th>
+		<th>12 month</th>
+	    </tr>
+	</thead>
+	<tbody>
+	    {% for period in report['one_month'] %}
+		<tr>
+		    <td>{{ period['period_label'] }}</td>
+		    <td>{{ period[element] }}</td>
+		    {% if loop.index >= 3 %}
+			<td>{{ report['three_month'][loop.index-3][element] }}</td>
+		    {% else %}
+			<td></td>
+		    {% endif %}
+
+		    {% if loop.index >= 6 %}
+			<td>{{ report['six_month'][loop.index-6][element] }}</td>
+		    {% else %}
+			<td></td>
+		    {% endif %}
+
+		    {% if loop.index >= 12 %}
+			<td>{{ report['twelve_month'][loop.index-12][element] }}</td>
+		    {% else %}
+			<td></td>
+		    {% endif %}
+		</tr>
+	    {% endfor %}
+	</tbody>
+    </table>
+{% endmacro %}

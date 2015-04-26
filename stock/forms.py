@@ -10,11 +10,4 @@ class AnalyseForm(Form):
     end = DateField("end", validators=[validators.input_required()])
     symbols = StringField("symbols",
                           validators=[validators.input_required()])
-    strategy = SelectField("strategy",
-                           choices=[(k, k) for k in strategies.keys()],
-                           validators=[validators.input_required()])
-    analysts = SelectMultipleField("analysts",
-                                   choices=[(k, k) for k in ANALYSTS.keys()],
-                                   validators=[validators.input_required()])
     parameters = TextAreaField("parameters")
-    
