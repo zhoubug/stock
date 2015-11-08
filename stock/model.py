@@ -31,8 +31,8 @@ class Market:
         return stocks
 
     @staticmethod
-    def get_stock(symbol, start_date=None, end_date=None):
-        df = Market._get_stock(symbol)
+    def get_stock(symbol, start_date=None, end_date=None, reindex=True):
+        df = Market._get_stock(symbol, reindex)
         start_i, end_i = trade_index(df, start_date, end_date)
         return df.ix[start_i:end_i].copy()
 
@@ -59,86 +59,13 @@ class Market:
             return Market._symbols
 
     @staticmethod
-    def _get_stock(symbol):
-        if symbol not in Market._cache:
-            hist = data.get_hist(symbol)
-            full = hist.reindex(trading_days)
-            full['volume'].fillna(0, inplace=True)
-            full['turnover'].fillna(0, inplace=True)
-            full['p_change'].fillna(0, inplace=True)
-            full['close'].fillna(method='pad', inplace=True)
-            full['price'].fillna(method='pad', inplace=True)
-            Market._cache[symbol] = full
-        return Market._cache[symbol]
-
-
-class Trader():
-    # fee parameters which will be a list
-    # in the list, value in (0, 1) will be multipled by order value
-    # value more than 1 will be added
-    # for example, if sell fee is [0.0008, 2]
-    # then fee = 0.0008*order_price + 2
-    fees = {'buy': [0.0008], 'sell': [0.0008, 1]}
-
-    @staticmethod
-    def make_order(portfolio, order):
-        price = order.share*order.price
-        if price > 0:     # buy
-            fee = Trader.fees['buy']
-        else:
-            fee = Trader.fees['sell']
-        total_fee = 0
-        for f in fee:
-            if f >= 1:          # fee by order
-                total_fee += 1
-            else:               # percentage by price
-                total_fee += abs(price) * f
-        total_price = price + total_fee
-
-        if total_price > portfolio.cash:
-            # no money to buy new stock
-            pass
-        else:
-            portfolio.cash -= total_price
-            portfolio.positions[order.symbol] += order.share
-        return total_fee
-
-
-class Portfolio():
-    """
-    is current cash and stocks
-    """
-    def __init__(self, init_cash):
-        self.cash = init_cash
-        self.positions = defaultdict(long)
-
-    def get_value(self, date):
-        value = self.cash
-        for sym, share in self.positions.items():
-            p = Market.get_stock_price(sym, date)
-            value += p.close*share
-        return value
-
-
-class Order():
-    def __init__(self, symbol, timestamp, share, price):
-        self.symbol = symbol
-        self.timestamp = timestamp
-        self.share = share
-        self.price = price
-
-    def __str__(self):
-        return '{}: {} {} {}'.format(self.timestamp, self.symbol,
-                                     self.share, self.price)
-
-
-class Property():
-    k = 252
-
-    def __init__(self, series):
-        self.values = series
-        returns = ind.returnize(series)
-        self.cum_return = (returns+1).cumprod()
-        self.avg_return = returns.mean()
-        self.std_return = returns.std()
-        self.sharpe_ratio = ind.sharpe_ratio(returns, Property.k)
+    def _get_stock(symbol, reindex=True):
+        hist = data.get_h(symbol)
+        if reindex:
+            hist = hist.reindex(trading_days)
+            hist['volume'].fillna(0, inplace=True)
+            # hist['turnover'].fillna(0, inplace=True)
+            # hist['p_change'].fillna(0, inplace=True)
+            hist['close'].fillna(method='pad', inplace=True)
+            hist['price'].fillna(method='pad', inplace=True)
+        return hist

@@ -5,9 +5,8 @@ from analyse import capm
 from flask import render_template, request, flash, redirect, url_for
 from forms import AnalyseForm
 from strategy import strategies
-import algorithms as algos
-from algorithms import test
 import json
+import os
 from docutils.core import publish_parts
 from zipline import TradingAlgorithm
 
@@ -16,9 +15,9 @@ from redis import Redis
 
 from jobs import scheduler, run_analyse
 
-
 redis_conn = Redis()
 q = Queue(connection=redis_conn)
+
 
 @app.route('/')
 def home():
@@ -60,19 +59,23 @@ def _scatter(sym):
 @app.route('/analyse', methods=["GET", "POST"])
 def analyse():
     form = AnalyseForm(request.form)
+    algorithms = [f for f in os.listdir(app.config['ALGO_DIR'])]
+    form.algorithm.choices = [(f, f) for f in algorithms if f.endswith('py')]
     if request.method == "POST":
         prefix = form.symbols.data
         symbols = filter(lambda s: s.startswith(prefix), data.get_basics().index)
-        print(symbols)
+
         start = form.start.data
         end = form.end.data
 
+        algo_fname = os.path.join(app.config['ALGO_DIR'],
+                                  form.algorithm.data)
         parameters = form.parameters.data
         kwargs = [ps.split('=') for ps in parameters.split(';')]
         kwargs = {v[0]: v[1] for v in kwargs if len(v) == 2}
 
         job = q.enqueue(run_analyse,
-                        test.initialize, test.handle_data,
+                        algo_fname,
                         symbols, start, end)
         # job_dict[job.id] = job
 
@@ -108,24 +111,32 @@ def job(id):
         orders = sorted(result['orders'].values(), key=lambda o: o.dt)
         results = result['results']
         report = result['report']
+        b_returns = result['benchmark']
 
         fig = plt.figure()
         ax1 = fig.add_subplot(211)
-        results.portfolio_value.plot(ax=ax1)
 
-        ax2 = fig.add_subplot(212)
-        results[['close', 'short_mavg', 'long_mavg']].plot(ax=ax2)
+        benchmark = (b_returns+1).cumprod() - 1
+        benchmark.index = benchmark.index.to_pydatetime()
+        benchmark.plot(ax=ax1, label='benchmark')
 
-        buy = results.buy.fillna(False)
-        sell = results.sell.fillna(False)
-        ax2.plot(results[buy].index, results.short_mavg[buy],
-                 '^', markersize=10, color='m')
-        ax2.plot(results[sell].index, results.short_mavg[sell],
-                 'v', markersize=10, color='k')
+        cum_portfolio = results.portfolio_value / results.portfolio_value[0]
+        (cum_portfolio-1).plot(ax=ax1, label='portfolio')
+
+        # ax2 = fig.add_subplot(212)
+        # results[['close', 'short_mavg', 'long_mavg']].plot(ax=ax2)
+
+        # buy = results.buy.fillna(False)
+        # sell = results.sell.fillna(False)
+        # ax2.plot(results[buy].index, results.short_mavg[buy],
+        #          '^', markersize=10, color='m')
+        # ax2.plot(results[sell].index, results.short_mavg[sell],
+        #          'v', markersize=10, color='k')
         plt.legend(loc=0)
 
         fig = mpld3.fig_to_html(fig)
         return render_template('result.html',
+                               parameters=parameters,
                                fig=fig,
                                report=report,
                                orders=orders)

@@ -7,7 +7,8 @@
 	    <table class="table">
 		<thead>
 		    <tr>
-			<th>id</th>
+			<th>time</th>
+			<th>algo</th>
 			<th>state</th>
 			<th>op</th>
 		    </tr>
@@ -15,7 +16,8 @@
 		<tbody>
 		    {% for id, result in jobs.iteritems() %}
 			<tr>
-			    <td>{{ id }} </td>
+			    <td>{{ result['parameters']['time'] }}</td>
+			    <td>{{ result['parameters']['algorithm'] }}</td>
 			    <td>{{ result != None }}</td>
 			    <td>
 				<a href="{{ url_for('job', id=id) }}">

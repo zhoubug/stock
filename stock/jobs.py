@@ -13,7 +13,7 @@ from zipline.utils.factory import create_simulation_parameters
 scheduler = Scheduler(connection=Redis())
 
 
-def run_analyse(initialize, handle_data, codes, start, end):
+def run_analyse(script, codes, start, end):
     open_time = "09:30:00"
     close_time = "15:00:00"
     start_time = "{0} {1}".format(start, open_time)
@@ -26,8 +26,9 @@ def run_analyse(initialize, handle_data, codes, start, end):
         emission_rate="daily",
         sids=codes)
 
-    zp_algo = zipline.TradingAlgorithm(initialize=initialize,
-                                       handle_data=handle_data,
+    with open(script, 'r') as f:
+        algo_text = f.read()
+    zp_algo = zipline.TradingAlgorithm(script=algo_text,
                                        namespace={},
                                        capital_base=10e6,
                                        sim_params=sim_params)
@@ -37,10 +38,14 @@ def run_analyse(initialize, handle_data, codes, start, end):
 
     res = zp_algo.run(d)
     results = {}
-    results['parameters'] = {}
+    results['parameters'] = {
+        'time': datetime.datetime.now(),
+        'algorithm': script,
+    }
     results['results'] = res
     results['report'] = zp_algo.risk_report
     results['orders'] = zp_algo.blotter.orders
+    results['benchmark'] = zp_algo.perf_tracker.all_benchmark_returns
     job = get_current_job(connection=Redis())
     data.save_result(job.id, results)
     return results

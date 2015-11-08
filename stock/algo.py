@@ -18,15 +18,9 @@ class MyAlgo(zp.TradingAlgorithm):
     def initialize(self):
         short_window = 10
         long_window = 50
-        self.add_transform(zp.transforms.MovingAverage, 'short_ma', ['close'],
-                           window_length=short_window)
-        self.add_transform(zp.transforms.MovingAverage, 'long_ma', ['close'],
-                           window_length=long_window)
 
-        self.add_transform(zp.transforms.MovingAverage, 'short_vol', ['volumn'],
-                           window_length=short_window)
-        self.add_transform(zp.transforms.MovingAverage, 'long_vol', ['volumn'],
-                           window_length=long_window)
+        self.add_history(5, '1d', 'close')
+        self.add_history(10, '1d', 'close')
 
         self.add_history()
         self.invested = False

@@ -10,4 +10,5 @@ class AnalyseForm(Form):
     end = DateField("end", validators=[validators.input_required()])
     symbols = StringField("symbols",
                           validators=[validators.input_required()])
+    algorithm = SelectField("algorithm", validators=[validators.input_required])
     parameters = TextAreaField("parameters")

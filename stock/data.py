@@ -9,6 +9,7 @@ DATA_DIR = os.path.join(BASE_DIR, 'static', 'data')
 INDEX = ['sh', 'sz', 'hs300', 'sz50', 'zxb', 'cyb']
 DATE_FORMAT = "%Y-%m-%d"
 
+# operations for algorithm results
 def save_result(id, result):
     filename = os.path.join(DATA_DIR, 'results', id)
     with open(filename, 'wb') as f:
@@ -34,6 +35,7 @@ def get_results():
     return results
 
 
+# for stock data
 def _update_data(f, name, data):
     try:
         # if there is old data, append new to old
@@ -56,26 +58,29 @@ def time_range(start, end):
         start = (d - delta).strftime(DATE_FORMAT)
     return start, end
 
-def update_basics():
-    basics = ts.get_stock_basics()
-    f = os.path.join(DATA_DIR, 'basics.h5')
-    basics.to_hdf(f, 'basics')
-
-    today = datetime.date.today()
+def last_report_season(date=None):
+    if date:
+        today = date
+    else:
+        today = datetime.date.today()
     current_year = today.year
     current_season = today.month / 3
     if current_season == 0:
         current_year -= 1
         current_season = 4
-    length = 4 * 5
+    return current_year, current_season
 
-    year = current_year
-    season = current_season
+def update_basics():
+    basics = ts.get_stock_basics()
+    f = os.path.join(DATA_DIR, 'basics.h5')
+    basics.to_hdf(f, 'basics')
+
+    length = 4 * 5
+    year, season = last_report_season()
     for i in range(length):
         f = os.path.join(DATA_DIR, 'basics-{0}-{1}.h5'.format(year, season))
         if os.path.exists(f):
             continue
-        print(f)
         report = ts.get_report_data(year, season)
         report.to_hdf(f, 'report')
 
@@ -98,6 +103,7 @@ def update_basics():
         if season == 0:
             season = 4
             year -= 1
+
 
 def update_h(start=None, end=None):
     basics = get_basics()
@@ -150,7 +156,37 @@ def get_basics(code=None):
     return df
 
 
+def _get_season_basics(year, season, name):
+    if not year or not season:
+        year, season = last_report_season()
+
+    f = os.path.join(DATA_DIR, 'basics-{0}-{1}.h5'.format(year, season))
+    df = pd.read_hdf(f, name)
+    return df
+
+
+def get_report(year=None, season=None):
+    return _get_season_basics(year, season, 'report')
+
+def get_profit(year=None, season=None):
+    return _get_season_basics(year, season, 'profit')
+
+def get_operation(year=None, season=None):
+    return _get_season_basics(year, season, 'operation')
+
+def get_growth(year=None, season=None):
+    return _get_season_basics(year, season, 'growth')
+
+def get_debtpaying(year=None, season=None):
+    return _get_season_basics(year, season, 'debtpaying')
+
+def get_cashflow(year=None, season=None):
+    return _get_season_basics(year, season, 'cashflow')
+
+
 def get_h(code):
+    if code in INDEX:
+        return get_hist(code)
     f = os.path.join(DATA_DIR, 'h.h5')
     df = pd.read_hdf(f, code)
     df['price'] = df['close']
@@ -158,7 +194,7 @@ def get_h(code):
     return df
 
 
-def get_hist(code, start=None, end=None):
+def get_hist(code):
     f = os.path.join(DATA_DIR, 'hist.h5')
     df = pd.read_hdf(f, code)
     df['price'] = df['close']
